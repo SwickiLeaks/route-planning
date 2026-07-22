@@ -12,10 +12,19 @@
 # box out of the remote planet archive rather than downloading the whole thing.
 #
 # Usage:
-#   ./scripts/fetch-map-assets.sh              # default region (los-angeles)
+#   ./scripts/fetch-map-assets.sh              # region committed in region.ts
 #   REGION=grand-canyon ./scripts/fetch-map-assets.sh
 set -euo pipefail
 
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+# Default to whatever region.ts is already configured for, so a fresh clone
+# just runs `npm run map:fetch` and gets data matching the committed config.
+# The two can otherwise silently disagree (wrong tiles under the camera).
+default_region() {
+  sed -n "s/^export const REGION_ID = '\(.*\)';/\1/p" "$ROOT/src/map/region.ts" 2>/dev/null
+}
+REGION="${REGION:-$(default_region)}"
 REGION="${REGION:-los-angeles}"
 
 # Each preset is: bbox(W,S,E,N) | center lng | center lat | zoom | label
@@ -65,7 +74,6 @@ CONTEXT_MAXZOOM="${CONTEXT_MAXZOOM:-7}"
 DETAIL_MIN_ZOOM=8
 
 PMTILES_VERSION="1.31.1"
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 OUT_DIR="$ROOT/public/map"
 
 mkdir -p "$OUT_DIR"
