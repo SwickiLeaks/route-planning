@@ -1,12 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 // NavigationControl / ScaleControl are also exported here if you re-enable them.
 import { Map } from 'react-map-gl/maplibre';
+import type { ErrorEvent } from 'react-map-gl/maplibre';
 import maplibregl from 'maplibre-gl';
 import { Protocol } from 'pmtiles';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
 import { INITIAL_VIEW, MAX_BOUNDS, buildMapStyle } from '@/map/style';
+import { isWebGLAvailable } from '@/map/webgl';
 import RouteLayers from '@/components/RouteLayers';
+import MapUnavailable from '@/components/MapUnavailable';
 import type { Route } from '@/types/proto';
 
 /**
@@ -32,6 +35,9 @@ const MapView = ({ routes }: MapViewProps) => {
   // Gate the first render on registration so the style can't request a
   // pmtiles:// URL before the handler exists.
   const [ready, setReady] = useState(protocolRegistered);
+  // Checked once on mount — WebGL support doesn't change within a session.
+  const [webglOk] = useState(isWebGLAvailable);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     registerPmtilesProtocol();
@@ -40,23 +46,50 @@ const MapView = ({ routes }: MapViewProps) => {
 
   const mapStyle = useMemo(() => buildMapStyle(), []);
 
+  // Most likely on a GPU-less VM or with WebGL disabled in the browser.
+  if (!webglOk) {
+    return (
+      <MapUnavailable
+        title="Map can't be displayed"
+        detail="This browser can't initialize WebGL, which the map requires. If you're on a VM or remote desktop, enable GPU/WebGL in the browser, or open the app from a machine with graphics acceleration."
+      />
+    );
+  }
+
   if (!ready) return null;
 
+  const handleError = (event: ErrorEvent) => {
+    // Surfaces style/tile/source failures that otherwise blank the map silently
+    // — e.g. missing public/map/*.pmtiles because `npm run map:fetch` hasn't run.
+    console.error('[map] load error:', event.error);
+    setLoadError(event.error?.message ?? 'Unknown map error');
+  };
+
   return (
-    <Map
-      initialViewState={{ ...INITIAL_VIEW }}
-      // attributionControl={false}
-      mapStyle={mapStyle}
-      maxBounds={MAX_BOUNDS}
-      // Tour planning is a top-down task; keep the camera 2D and predictable.
-      dragRotate={false}
-      touchZoomRotate={false}
-      style={{ width: '100%', height: '100%' }}
-    >
-      <RouteLayers routes={routes} />
-      {/* <NavigationControl position="top-right" showCompass={false} /> */}
-      {/* <ScaleControl position="bottom-left" unit="nautical" /> */}
-    </Map>
+    <>
+      <Map
+        initialViewState={{ ...INITIAL_VIEW }}
+        // attributionControl={false}
+        mapStyle={mapStyle}
+        maxBounds={MAX_BOUNDS}
+        // Tour planning is a top-down task; keep the camera 2D and predictable.
+        dragRotate={false}
+        touchZoomRotate={false}
+        onError={handleError}
+        style={{ width: '100%', height: '100%' }}
+      >
+        <RouteLayers routes={routes} />
+        {/* <NavigationControl position="top-right" showCompass={false} /> */}
+        {/* <ScaleControl position="bottom-left" unit="nautical" /> */}
+      </Map>
+
+      {loadError && (
+        <MapUnavailable
+          title="Map data failed to load"
+          detail={`${loadError}. If this is a fresh clone, run "npm run map:fetch" to download the map tiles into public/map/, then reload.`}
+        />
+      )}
+    </>
   );
 };
 
