@@ -1,0 +1,63 @@
+import { useEffect, useMemo, useState } from 'react';
+// NavigationControl / ScaleControl are also exported here if you re-enable them.
+import { Map } from 'react-map-gl/maplibre';
+import maplibregl from 'maplibre-gl';
+import { Protocol } from 'pmtiles';
+import 'maplibre-gl/dist/maplibre-gl.css';
+
+import { INITIAL_VIEW, MAX_BOUNDS, buildMapStyle } from '@/map/style';
+import RouteLayers from '@/components/RouteLayers';
+import type { Route } from '@/types/proto';
+
+/**
+ * Teaches MapLibre to resolve `pmtiles://` URLs by range-requesting the local
+ * archive. Registered once at module scope — re-registering throws, and React
+ * 19 StrictMode double-invokes effects.
+ */
+let protocolRegistered = false;
+
+const registerPmtilesProtocol = () => {
+  if (protocolRegistered) return;
+
+  const protocol = new Protocol();
+  maplibregl.addProtocol('pmtiles', protocol.tile);
+  protocolRegistered = true;
+};
+
+interface MapViewProps {
+  routes: Route[];
+}
+
+const MapView = ({ routes }: MapViewProps) => {
+  // Gate the first render on registration so the style can't request a
+  // pmtiles:// URL before the handler exists.
+  const [ready, setReady] = useState(protocolRegistered);
+
+  useEffect(() => {
+    registerPmtilesProtocol();
+    setReady(true);
+  }, []);
+
+  const mapStyle = useMemo(() => buildMapStyle(), []);
+
+  if (!ready) return null;
+
+  return (
+    <Map
+      initialViewState={{ ...INITIAL_VIEW }}
+      // attributionControl={false}
+      mapStyle={mapStyle}
+      maxBounds={MAX_BOUNDS}
+      // Tour planning is a top-down task; keep the camera 2D and predictable.
+      dragRotate={false}
+      touchZoomRotate={false}
+      style={{ width: '100%', height: '100%' }}
+    >
+      <RouteLayers routes={routes} />
+      {/* <NavigationControl position="top-right" showCompass={false} /> */}
+      {/* <ScaleControl position="bottom-left" unit="nautical" /> */}
+    </Map>
+  );
+};
+
+export default MapView;

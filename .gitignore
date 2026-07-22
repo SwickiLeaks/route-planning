@@ -1,3 +1,6 @@
 node_modules
 dist
 CLAUDE.md
+
+# Vendored map assets — large binaries, regenerate with `npm run map:fetch`
+public/map/*.pmtiles
