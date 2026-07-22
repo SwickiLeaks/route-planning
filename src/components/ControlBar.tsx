@@ -112,33 +112,46 @@ const ControlBar = () => {
               New controls go here.
             </Typography>
           </Box>
-
-          {/* Resize grip. touchAction: none is required for pointer-dragging
-              to work on touchscreens. */}
-          <Box
-            onPointerDown={onGripPointerDown}
-            onPointerMove={onGripPointerMove}
-            onPointerUp={onGripPointerUp}
-            role="separator"
-            aria-orientation="horizontal"
-            aria-label="Resize control section"
-            sx={{
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              height: 18,
-              cursor: 'ns-resize',
-              touchAction: 'none',
-              userSelect: 'none',
-              borderTop: '1px solid',
-              borderColor: 'divider',
-              '&:hover': { bgcolor: 'action.hover' },
-            }}
-          >
-            <DragHandleIcon sx={{ fontSize: 16, opacity: 0.5 }} />
-          </Box>
         </Collapse>
       </Paper>
+
+      {/* Resize grip: a small tab protruding under the panel's bottom edge.
+          Lives outside the Paper because Paper clips (overflow: hidden).
+          touchAction: none is required for pointer-dragging on touchscreens. */}
+      {open && (
+        <Box
+          onPointerDown={onGripPointerDown}
+          onPointerMove={onGripPointerMove}
+          onPointerUp={onGripPointerUp}
+          role="separator"
+          aria-orientation="horizontal"
+          aria-label="Resize control section"
+          sx={{
+            position: 'absolute',
+            top: '100%',
+            left: '50%',
+            // -1px overlaps the panel's bottom border so tab and panel merge.
+            transform: 'translate(-50%, -1px)',
+            width: 56,
+            height: 16,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            bgcolor: 'rgba(18, 22, 28, 0.85)',
+            backdropFilter: 'blur(12px)',
+            border: '1px solid',
+            borderColor: 'divider',
+            borderTop: 'none',
+            borderRadius: '0 0 8px 8px',
+            cursor: 'ns-resize',
+            touchAction: 'none',
+            userSelect: 'none',
+            '&:hover': { bgcolor: 'action.hover' },
+          }}
+        >
+          <DragHandleIcon sx={{ fontSize: 14, opacity: 0.6 }} />
+        </Box>
+      )}
     </Box>
   );
 };
