@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { Layer, Source } from 'react-map-gl/maplibre';
 import type { Route } from '@/types/proto';
 import { routesToLines, routesToWaypoints } from '@/map/routes';
+import { colors, mapAccents } from '@/theme/tokens';
 
 interface RouteLayersProps {
   routes: Route[];
@@ -20,7 +21,7 @@ const RouteLayers = ({ routes }: RouteLayersProps) => {
           type="line"
           layout={{ 'line-cap': 'round', 'line-join': 'round' }}
           paint={{
-            'line-color': '#000000',
+            'line-color': mapAccents.routeCasing,
             'line-opacity': 0.7,
             'line-width': 6,
           }}
@@ -44,7 +45,7 @@ const RouteLayers = ({ routes }: RouteLayersProps) => {
             'circle-radius': 4,
             'circle-color': ['get', 'color'],
             'circle-stroke-width': 1.5,
-            'circle-stroke-color': '#0f1115',
+            'circle-stroke-color': mapAccents.labelHalo,
           }}
         />
         <Layer
@@ -60,8 +61,8 @@ const RouteLayers = ({ routes }: RouteLayersProps) => {
             'text-optional': true,
           }}
           paint={{
-            'text-color': '#e6e8eb',
-            'text-halo-color': '#0f1115',
+            'text-color': colors.white,
+            'text-halo-color': mapAccents.labelHalo,
             'text-halo-width': 1.5,
           }}
         />

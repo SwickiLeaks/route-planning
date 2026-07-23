@@ -2,17 +2,18 @@
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   line-height: 1.5;
 
-  /* Pinned rather than `light dark`: the previous value left the background to
-     the OS theme, so the same build rendered black on one machine and white on
-     another. A tour map wants one predictable canvas. */
+  /* Pinned rather than `light dark`: a tour map wants one predictable canvas
+     regardless of the OS theme. */
   color-scheme: dark;
 
-  --bg: #0f1115;
-  --panel: #161a20;
-  /* Translucent variant for panels floating over the map. */
-  --panel-overlay: rgba(18, 22, 28, 0.82);
-  --border: #262c36;
-  --fg: #e6e8eb;
+  /* Fallbacks for the first paint before React mounts. The authoritative
+     values live in src/theme/tokens.ts and are re-injected at runtime by
+     CssBaseline — keep these visually close, but don't hand-tune here. */
+  --bg: #0d0d0d;
+  --panel: #141412;
+  --panel-overlay: rgba(13, 13, 13, 0.85);
+  --border: #2a2822;
+  --fg: #faf9f7;
 }
 
 * {

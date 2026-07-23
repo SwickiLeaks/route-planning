@@ -1,6 +1,7 @@
 import { layers, namedFlavor } from '@protomaps/basemaps';
 import type { LayerSpecification, StyleSpecification } from 'maplibre-gl';
 import { DETAIL_MIN_ZOOM } from '@/map/region';
+import { mapAccents } from '@/theme/tokens';
 
 /**
  * Everything the map needs is served from public/map/ — no runtime network
@@ -38,10 +39,11 @@ const hillshadeLayer: LayerSpecification = {
   minzoom: DETAIL_MIN_ZOOM,
   paint: {
     // Tuned for the dark flavor: relief should read as depth, not haze.
+    // Colors come from the design tokens so re-theming restyles terrain too.
     'hillshade-exaggeration': 0.6,
-    'hillshade-shadow-color': '#000000',
-    'hillshade-highlight-color': '#8fa3b0',
-    'hillshade-accent-color': '#1b2b36',
+    'hillshade-shadow-color': mapAccents.hillshadeShadow,
+    'hillshade-highlight-color': mapAccents.hillshadeHighlight,
+    'hillshade-accent-color': mapAccents.hillshadeAccent,
     'hillshade-illumination-direction': 315,
   },
 };

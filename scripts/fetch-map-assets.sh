@@ -64,6 +64,18 @@ DEM_URL="https://download.mapterhorn.com/planet.pmtiles"
 BASEMAP_MAXZOOM="${BASEMAP_MAXZOOM:-14}"
 DEM_MAXZOOM="${DEM_MAXZOOM:-11}"
 
+# The terrain extract gets a buffer around the region bbox. Without it, high-
+# zoom DEM tiles hug the bbox exactly while low-zoom parent tiles spill far
+# past it — so terrain visibly appears when zooming out and vanishes when
+# zooming back in. The buffer pushes that edge ~30nm out from the data.
+# Terrain size scales with area: 0.5 ≈ 3-4x the unbuffered archive.
+DEM_MARGIN="${DEM_MARGIN:-0.5}"
+DEM_BBOX="$(node -e "
+  const [w, s, e, n] = '$BBOX'.split(',').map(Number);
+  const m = Number('$DEM_MARGIN');
+  console.log([w - m, Math.max(s - m, -85), e + m, Math.min(n + m, 85)].join(','));
+")"
+
 # A `pmtiles extract` keeps only tiles overlapping its bbox, so at low zoom the
 # detail archive is a single tile in empty space. This second, coarse archive
 # covers the whole continent cheaply (~19MB at z7) and renders underneath, so
@@ -97,9 +109,9 @@ echo "==> [${REGION}] Extracting basemap from ${BASEMAP_BUILD} (z<=${BASEMAP_MAX
 "$PMTILES" extract "$BASEMAP_URL" "$OUT_DIR/basemap.pmtiles" \
   --bbox="$BBOX" --maxzoom="$BASEMAP_MAXZOOM"
 
-echo "==> [${REGION}] Extracting terrain DEM (z<=${DEM_MAXZOOM})"
+echo "==> [${REGION}] Extracting terrain DEM (z<=${DEM_MAXZOOM}, bbox+${DEM_MARGIN})"
 "$PMTILES" extract "$DEM_URL" "$OUT_DIR/terrain.pmtiles" \
-  --bbox="$BBOX" --maxzoom="$DEM_MAXZOOM"
+  --bbox="$DEM_BBOX" --maxzoom="$DEM_MAXZOOM"
 
 echo "==> Extracting low-zoom context basemap (z<=${CONTEXT_MAXZOOM})"
 "$PMTILES" extract "$BASEMAP_URL" "$OUT_DIR/context.pmtiles" \

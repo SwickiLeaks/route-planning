@@ -1,8 +1,9 @@
 import type { Feature, FeatureCollection, LineString, Point } from 'geojson';
 import type { Route } from '@/types/proto';
+import { mapAccents } from '@/theme/tokens';
 
-/** Distinct, high-contrast against the dark flavor and the hillshade beneath. */
-const ROUTE_COLORS = ['#ffb703', '#4cc9f0', '#f72585', '#90be6d'];
+/** From the design tokens, so re-theming restyles the chart too. */
+const ROUTE_COLORS = mapAccents.routeColors;
 
 /** Shared with the route panel so its swatches match the lines on the map. */
 export const routeColor = (index: number) =>

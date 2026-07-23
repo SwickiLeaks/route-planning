@@ -7,6 +7,8 @@ import Collapse from '@mui/material/Collapse';
 import Typography from '@mui/material/Typography';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import DragHandleIcon from '@mui/icons-material/DragHandle';
+import SampleControls from '@/components/SampleControls';
+import { surface } from '@/theme/tokens';
 
 const DEFAULT_HEIGHT = 240;
 const MIN_HEIGHT = 64;
@@ -69,7 +71,7 @@ const ControlBar = () => {
       <Paper
         elevation={4}
         sx={{
-          bgcolor: 'rgba(18, 22, 28, 0.85)',
+          bgcolor: surface.overlay,
           backdropFilter: 'blur(12px)',
           border: '1px solid',
           borderColor: 'divider',
@@ -108,9 +110,7 @@ const ControlBar = () => {
               p: 1.5,
             }}
           >
-            <Typography variant="body2" sx={{ opacity: 0.4 }}>
-              New controls go here.
-            </Typography>
+            <SampleControls />
           </Box>
         </Collapse>
       </Paper>
@@ -137,7 +137,7 @@ const ControlBar = () => {
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
-            bgcolor: 'rgba(18, 22, 28, 0.85)',
+            bgcolor: surface.overlay,
             backdropFilter: 'blur(12px)',
             border: '1px solid',
             borderColor: 'divider',

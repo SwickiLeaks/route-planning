@@ -83,40 +83,46 @@ const SAMPLE_ROUTES: Route[] = [
         position: { lat: 36.1627, lng: -86.7816 },
         altitudeFt: 2000,
       },
-    ],
-  },
-  {
-    id: 'nashville-orbit',
-    name: 'Nashville City Orbit',
-    distanceNm: 19,
-    durationMin: 20,
-    waypoints: [
       {
-        id: 'bna-orbit',
-        name: 'Nashville Intl (BNA)',
-        position: { lat: 36.1245, lng: -86.6782 },
-        altitudeFt: 599,
-      },
-      {
-        id: 'dtn-orbit',
-        name: 'Downtown Nashville',
-        position: { lat: 36.1627, lng: -86.7816 },
-        altitudeFt: 1500,
-      },
-      {
-        id: 'percy-priest',
-        name: 'Percy Priest Lake',
-        position: { lat: 36.133, lng: -86.61 },
-        altitudeFt: 1500,
-      },
-      {
-        id: 'bna-orbit-return',
+        id: 'bna',
         name: 'Nashville Intl (BNA)',
         position: { lat: 36.1245, lng: -86.6782 },
         altitudeFt: 599,
       },
     ],
   },
+  // {
+  //   id: 'nashville-orbit',
+  //   name: 'Nashville City Orbit',
+  //   distanceNm: 19,
+  //   durationMin: 20,
+  //   waypoints: [
+  //     {
+  //       id: 'bna-orbit',
+  //       name: 'Nashville Intl (BNA)',
+  //       position: { lat: 36.1245, lng: -86.6782 },
+  //       altitudeFt: 599,
+  //     },
+  //     {
+  //       id: 'dtn-orbit',
+  //       name: 'Downtown Nashville',
+  //       position: { lat: 36.1627, lng: -86.7816 },
+  //       altitudeFt: 1500,
+  //     },
+  //     {
+  //       id: 'percy-priest',
+  //       name: 'Percy Priest Lake',
+  //       position: { lat: 36.133, lng: -86.61 },
+  //       altitudeFt: 1500,
+  //     },
+  //     {
+  //       id: 'bna-orbit-return',
+  //       name: 'Nashville Intl (BNA)',
+  //       position: { lat: 36.1245, lng: -86.6782 },
+  //       altitudeFt: 599,
+  //     },
+  //   ],
+  // },
 ];
 
 export const fetchRoutes = async (): Promise<Route[]> => {
