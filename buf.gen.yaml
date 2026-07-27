@@ -1,0 +1,12 @@
+# Generates TypeScript from proto/ into src/api/gen/ via `npm run gen`.
+# Uses only the local protoc-gen-es plugin (no protoc, no remote plugins) —
+# connect-query v2 consumes the generated service descriptors directly, so no
+# separate query-codegen plugin is needed.
+version: v2
+inputs:
+  - directory: proto
+plugins:
+  - local: protoc-gen-es
+    out: src/api/gen
+    opt:
+      - target=ts

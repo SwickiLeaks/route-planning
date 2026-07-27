@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+// PLACEHOLDER proto — the second service file, to prove multi-file codegen.
+// Replace with the real definition, then run `npm run gen`.
+package helicopter.v1;
+
+message Aircraft {
+  string id = 1;
+  string type = 2;
+  int32 cruise_kt = 3;
+  double fuel_burn_gph = 4;
+}
+
+message ListAircraftRequest {}
+
+message ListAircraftResponse {
+  repeated Aircraft aircraft = 1;
+}
+
+service AircraftService {
+  rpc ListAircraft(ListAircraftRequest) returns (ListAircraftResponse);
+}

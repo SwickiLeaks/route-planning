@@ -13,5 +13,15 @@ export default defineConfig({
   server: {
     port: 3000,
     open: true,
+    proxy: {
+      // Browser gRPC-Web calls hit same-origin /api and get forwarded to the
+      // backend on :5000, stripping the /api prefix. Avoids CORS in dev; in
+      // other environments set VITE_API_BASE_URL to the real gateway instead.
+      '/api': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, ''),
+      },
+    },
   },
 });
