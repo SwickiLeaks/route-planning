@@ -1,7 +1,7 @@
-import { useQuery, useMutation } from '@connectrpc/connect-query';
-import { useQueryClient } from '@tanstack/react-query';
-import { createConnectQueryKey } from '@connectrpc/connect-query';
-import { RouteService } from '@/api/gen/helicopter/v1/route_pb';
+// import { useQuery, useMutation } from '@connectrpc/connect-query';
+// import { useQueryClient } from '@tanstack/react-query';
+// import { createConnectQueryKey } from '@connectrpc/connect-query';
+// import { RouteService } from '@/api/gen/helicopter/v1/route_pb';
 
 /**
  * Example connect-query hooks over the gRPC-Web RouteService. Typed end-to-end
@@ -11,21 +11,21 @@ import { RouteService } from '@/api/gen/helicopter/v1/route_pb';
  */
 
 /** Fetch routes for a region. */
-export const useRoutesQuery = (region: string) =>
-  useQuery(RouteService.method.listRoutes, { region });
+// export const useRoutesQuery = (region: string) =>
+//   useQuery(RouteService.method.listRoutes, { region });
 
 /** Create a route, invalidating the routes list on success. */
-export const useCreateRoute = () => {
-  const queryClient = useQueryClient();
+// export const useCreateRoute = () => {
+//   const queryClient = useQueryClient();
 
-  return useMutation(RouteService.method.createRoute, {
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: createConnectQueryKey({
-          schema: RouteService.method.listRoutes,
-          cardinality: 'finite',
-        }),
-      });
-    },
-  });
-};
+//   return useMutation(RouteService.method.createRoute, {
+//     onSuccess: () => {
+//       queryClient.invalidateQueries({
+//         queryKey: createConnectQueryKey({
+//           schema: RouteService.method.listRoutes,
+//           cardinality: 'finite',
+//         }),
+//       });
+//     },
+//   });
+// };

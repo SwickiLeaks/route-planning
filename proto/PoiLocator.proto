@@ -1,0 +1,429 @@
+syntax = "proto3";
+import "google/protobuf/wrappers.proto";
+option csharp_namespace = "POISvr";
+
+package poilocator;
+
+service PoiSearcher{
+    rpc AvailableLocationSources(Empty) returns (LocationIdentityList);
+
+	rpc SearchForLocationByText(TextSearchRequest) returns (GroupsListMessage);
+	rpc SearchByPedigree(PedigreeSearchRequest) returns (LocatorPoint);
+	rpc SearchByDBLookup(DBLookupSearchRequest) returns (LocatorPoint);
+	rpc SearchProcedures(ProcedureSearchRequest) returns (ProcedureSearchResponse);
+	rpc GetProcedurePoints(ProcedurePointsRequest) returns (ProcedurePointsResponse);
+	rpc GetProcedureRemarks(ProcedureRemarksRequest) returns (ProcedureRemarksResponse);
+
+	// BearingRangeFromPoint -- why is this on server side? Maybe become part of DAFIF util class
+
+	// POIUpdater stuff
+	rpc CheckLocationDataByPoints(LocatorPoints) returns (SourcesMessage);
+	rpc CheckLocationDataByGroups(GroupsInformation) returns (SourcesMessage);
+	rpc UpdateLocationData(LocatorPoints) returns (UpdatesMessage);
+	rpc UpdateLocationDataEx(LocatorPoints) returns (UpdatesMessageEx);
+	rpc UpdateLocationDataByGroups(GroupsInformation) returns (GroupUpdatesMessage);
+	// CycleDateToTime -- why on server side? Maybe become part of DAFIF util class
+
+	rpc ConvertXmlToPoints(FeatureCollectionMessage) returns (GroupsListMessage);
+
+	rpc GetReportData(LocatorPoint) returns (FeatureCollectionMessage);
+
+    // Allows client to log a message to the service
+    rpc LogMessage(LogRequest) returns (LogResponse);
+	rpc GetCurrentDafifCycle(Empty) returns (TextResponse);
+
+	// Allow a client to check the connection state
+	rpc Handshake(AppId) returns (State);
+}
+
+message Empty{}
+
+message AppId {
+	string id = 1;
+}
+
+message State {
+	string state = 1;
+}
+
+message FeatureCollectionMessage {
+  string feature_collection = 1;
+}
+
+message SourcesMessage {
+    bool out_of_date = 1;
+	repeated string outdated_sources = 2;
+	repeated string missing_sources = 3;
+}
+
+message UpdatesMessage {
+    repeated UpdateMessage update_messages = 1;
+}
+
+message UpdateMessage {
+     LocatorPoint updated_point = 1;
+	 string updated_point_message = 2;
+}
+
+message UpdatesMessageEx {
+	repeated UpdateMessage update_message = 1;
+    LocatorPoints unsearchable_points = 2;
+}
+
+message TextSearchRequest {
+	string searchText = 1;
+	SearchOptions options = 2;
+}
+
+message SearchOptions {
+	string previous_location = 1;
+	string reference_location = 2;
+	bool exact_search = 3;
+	bool search_description = 4;
+	LocationIdentityList search_order = 5;
+	// Values for OuputType must match values in POILocator.Contracts.OutputType.
+	enum OutputType {
+		ASIS = 0;
+		TACAN = 1;
+		DME = 2;
+	}
+	OutputType output_type = 6;
+	repeated AttributeInfo search_params = 7;
+	int32 results_to_display = 8;
+}
+
+
+message DBLookupSearchRequest{
+	string dblookup = 1;
+	string category = 2;
+}
+
+message PedigreeSearchRequest {
+	Pedigree pedigree = 1;
+	string category = 2;
+}
+
+message LocationIdentity{
+    string source_id = 1;
+	string source_name = 2;
+	repeated string search_suffixes = 3;
+	bool multipoint = 4;
+	bool allows_generic_search = 5;
+	repeated string minimum_field_set = 6;
+	string table_name = 7;
+	string database_source_id = 8;
+	string secondary_table_name = 9;
+	string default_query = 10;
+	bool exact_search = 11; // Is this an in or out parameter? Out parameter moved to LocatorPoints
+}
+
+message LocationIdentityList {
+	repeated LocationIdentity identity = 1;
+}
+
+message GroupsListMessage {
+	repeated GroupMessage groups = 1;
+}
+
+message GroupMessage {
+	repeated LocatorPoint locator_points = 1;
+	PointGroupInformation group_information = 2;
+	bool exact_search = 3;
+	repeated string alerts = 4;
+	repeated string errors = 5;
+	AttributeInfoList attributes = 6;
+}
+
+message LocatorPoints{
+	repeated LocatorPoint locations = 1;
+	//PointGroupInformation point_group_infoformation = 2;
+	bool exact_search = 3;
+	repeated string alerts = 4;
+	repeated string errors = 5;
+}
+
+message LocatorPoint{
+    string cycle_date = 1;
+	string country_code = 2;
+	Pedigree pedigree = 3;
+	string coordinate = 4; // Coordinate
+	string dme_fix_coordinate = 5; // Coordinate
+	string dtd_id = 6;
+	string elevation = 7; // Elevation
+	string depth = 8; // Depth
+	string input_datum = 9;
+	string dblookup = 10;
+	string name_fix = 11;
+	string description = 12;
+	string category = 13;
+	string category_name = 14;
+	string horizontal_accuracy = 15; // Length
+	string vertical_accuracy = 16; // Length
+	google.protobuf.Int32Value quality = 17; // nullable int (really should be short)
+	string magvar = 18; //Magvar
+	string dme_magnetic_variation = 19; // Magvar
+	string slave_variation = 20; // Magvar
+	string command_base_id = 21;
+	google.protobuf.Int32Value navaid_region = 22; // nullable byte
+	google.protobuf.Int32Value navaid_type = 23; // nullable byte
+	string runway_id = 24;
+	string runway_magnetic_heading = 25; // HeadingMag
+	string mplanid = 26;
+	string remarks1 = 27;
+	string remarks2 = 28;
+	string remarks3 = 29;
+	string aimpoint_description_code = 30;
+	string navaid_channel = 31;
+	string navaid_frequency = 32;
+	AttributeInfoList attributes = 33;
+	string id = 34;
+}
+
+message AttributeInfo {
+	string name = 1;
+	string value = 2;
+	bool is_null = 3;
+	string type_name = 4;
+	string assembly_name = 5;
+}
+
+// A collection of attribute entries
+message AttributeInfoList {
+	repeated AttributeInfo attributes = 2;
+}
+
+message GroupsInformation {
+	repeated PointGroupInformation groups = 1;
+}
+
+message PointGroupInformation {
+    string id = 1;
+	string name = 2;
+	string category = 3;
+	string category_name = 4;
+	string color = 5;
+	string creator = 6;
+	bool is_data_valid = 7;
+	Pedigree pedigree = 8;
+}
+
+message GroupUpdatesMessage {
+	repeated GroupUpdateMessage update_message = 1;
+}
+
+message GroupUpdateMessage {
+    PointGroupInformation group_information = 1;
+	string updated_group_message = 2;
+}
+
+message Pedigree {
+    string data_source_id = 1;
+	string lookup = 2;
+	string cycle_date = 3;
+	string pedigree_col = 4;
+	ParameterDictionaryMessage parameter_dictionary_message = 5;
+}
+
+// Make a search request by providing
+//  one of the following:
+//   - Airfield ID
+//   - Pedigree
+//   - DBLookup
+//   - Search text
+message ProcedureSearchRequest {
+	string airfieldid = 1; // ID for airfield
+	string pedigree = 2; // Pedigree string
+	string dblookup = 3; // DBLookup string
+	string searchtext = 4; // Search text for addin
+	string category = 5; // A - E
+	SearchTypeEnum SearchType = 6;
+	string vehdesc = 7;
+	ProcedureOptions procedureoptions = 8;
+	AirfieldType airfieldtype = 9;
+}
+
+message ProcedureOptions {
+	google.protobuf.Int32Value approachtypes = 1;
+	string maxcategory = 2;
+	string mincategory = 3;
+	string approachcategory = 4;
+	string speed = 5;
+}
+
+message ProcedureInfoOptions {
+	string approachCategory = 1;
+	string minimaCategory = 2;
+	bool showMissedApproach = 3;
+	bool showFeeder = 4;
+}
+
+message ProcedureSearchResponse {
+	repeated ProcedureInfo infos = 1;
+}
+
+message ProcedureInfo {
+	string procedureid = 1;
+	string transoneid = 2;
+	string transtwoid = 3;
+	string airfieldid = 4;
+	string icao = 5;
+	string cycledate = 6;
+	string pedigree = 7;
+	string dblookup = 8;
+	SearchTypeEnum searchtype = 9;
+	string procedurecategory = 10;
+	repeated string typefilter = 11;
+	string speed = 12;
+	AirfieldType airfieldtype = 13;
+	int32 propulsion = 14;
+	string initialapprpt = 15;
+	int32 seqNumber = 16;
+	string feederpoint = 17;
+	repeated string minima = 18;
+	repeated string allminima = 19;
+	ProcedureInfoOptions options = 20;
+	string category = 21;
+	string categoryname = 22;
+	string datapedigree = 23;
+}
+
+message ProcedureRemarksRequest
+{
+	ProcedureInfo info = 1;
+}
+
+message ProcedureRemarksResponse
+{
+	repeated ProcedureRemarks remarks = 1;
+}
+
+message ProcedureRemarks
+{
+	int32 sequence = 1;
+	string text = 2;
+	string type = 3;
+}
+
+message ProcedurePoint {
+	bool ismap = 1;
+	bool isiaf = 2;
+	string heading = 4; // CourseTrue
+	string type = 5;
+	string elevation = 6; // Elevation
+	bool isprocedureturn45degree = 7;
+	string runwayidhi = 10;
+	string runwayidlo = 11;
+	string symbol = 12;
+	google.protobuf.Int32Value transition = 13;
+	string distance = 14; // Length
+	bool shown = 15;
+	bool overfly = 16;
+	string dblookup = 18;
+	GeoCoordinate point = 19;
+	string name = 20;
+	string transitionDesc = 21;
+	string altitudeDesc = 22;
+	string waypoint = 23;
+	optional GeoTurn turn = 24;
+	LocatorPoint pointdata = 25;
+}
+
+message ProcedureSegment {
+	repeated ProcedurePoint points = 1;
+	string procedureid = 2;
+	AirfieldType airfieldtype = 3;
+	string dblookup = 4;
+	string cycledate = 5;
+	string pedigree = 6;
+	string airfieldid = 7;
+	string transoneid = 8;
+	string transtwoid = 9;
+	google.protobuf.Int32Value propulsion = 10;
+	AirfieldMsa msa = 11;
+	string speed = 12;
+	string altitudeone = 13;
+	string altitudetwo = 14;
+	string speedone = 15;
+	string speedtwo = 16;
+	string altitudedescription = 17;
+}
+
+message ProcedurePointsRequest {
+	ProcedureInfo info = 1;
+}
+
+message ProcedurePointsResponse {
+	ProcedureSegment segment = 1;
+}
+
+message AirfieldMsa {
+	string airfieldid = 1;
+	string procedureid = 2;
+	string center = 3; // Coordinate
+	repeated MsaSector sectors = 4;
+}
+
+message GeoCoordinate {
+	string Coordinate = 1;
+	string altitude = 2;
+}
+
+message GeoTurn {
+	string center = 1;				// Coordinate
+	GeoCoordinate endPoint = 2;
+	GeoCoordinate startPoint = 3;
+	string startAngle = 4;			// CourseTrue
+	string inBoardCourse = 5;		// CourseTrue
+	string radius = 6;				// Length
+	string arc = 7;					// Angle
+	repeated GeoCoordinate points = 8;
+	repeated GeoTurn	subTurns = 9;
+}
+
+message MsaSector {
+	string neardistance = 1; // Length
+	string fardistance = 2; // Length
+	string sectorbearing = 3; // CourseTrue
+	string sectorsize = 4; // Angle
+	string minsafealtitude = 5; // AltitudeMSL
+}
+
+message ParameterDictionaryMessage {
+	map<string, string> parameters = 1;
+}
+
+enum AirfieldType {
+	Airport = 0;
+    Heliport = 1;
+    Runway = 2;
+    Unknown = 3;
+}
+
+enum SearchTypeEnum {
+	Arrival = 0;
+	Approach = 1;
+	Departure = 2;
+}
+
+// Request message used with LogMessage method
+message LogRequest {
+    string ClientID = 1;        // Name of the client using this message
+    enum ServiceLogType {
+        Info = 0;               // Log informational message
+        Warn = 1;               // Log warning message
+        Debug = 2;              // Log debug message
+        Error = 3;              // Log error message
+        Fatal = 4;              // Log fatal message
+        Trace = 5;              // Log trace message
+    } ServiceLogType LoggingType = 2;   // Type of message being logged
+    string Message = 3;
+}
+
+// Response received from a call to the Log method
+message LogResponse {
+
+}
+
+message TextResponse {
+	string message = 1;
+}
