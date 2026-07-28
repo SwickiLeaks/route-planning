@@ -24,7 +24,9 @@ const RouteCalcOverlay = ({ route, calc, calculating = false }: RouteCalcOverlay
 
   useEffect(() => {
     if (placing || !map || selLng == null || selLat == null) return;
-    map.easeTo({ center: [selLng, selLat], duration: 500 });
+    // essential: keep the pan animated even when the OS/browser requests
+    // reduced motion (common on VMs), where it would otherwise jump instantly.
+    map.easeTo({ center: [selLng, selLat], duration: 600, essential: true });
   }, [map, placing, selectedWaypointId, selLng, selLat]);
 
   return (

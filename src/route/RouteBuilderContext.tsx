@@ -13,8 +13,8 @@ import type {
   WaypointActionType,
 } from '@/route/routeBuilderTypes';
 
-const defaultParams = (type: WaypointActionType, wp: BuilderWaypoint): ActionParams =>
-  type === 'hover' ? { durationSec: 60, altitudeFt: wp.altitudeFt } : {};
+const defaultParams = (type: WaypointActionType, _wp: BuilderWaypoint): ActionParams =>
+  type === 'hover' ? { durationSec: 120, altitudeFt: 50 } : {};
 
 let seq = 0;
 const uid = (prefix: string) => `${prefix}-${(seq += 1)}`;
