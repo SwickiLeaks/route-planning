@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Marker } from 'react-map-gl/maplibre';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -36,6 +36,23 @@ const WaypointActionMenu = ({
   const { addAction, updateAction, removeAction } = useRouteBuilder();
   const def = actionDef('hover');
   const hover = (waypoint.actions ?? []).find((a) => a.type === 'hover');
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  // MapLibre markers preventDefault on mousedown ("prevent focusing on click"),
+  // which blocks input focus. Stop those events before they reach the marker.
+  useEffect(() => {
+    const el = cardRef.current;
+    if (!el) return;
+    const stop = (e: Event) => e.stopPropagation();
+    el.addEventListener('mousedown', stop);
+    el.addEventListener('touchstart', stop);
+    el.addEventListener('dblclick', stop);
+    return () => {
+      el.removeEventListener('mousedown', stop);
+      el.removeEventListener('touchstart', stop);
+      el.removeEventListener('dblclick', stop);
+    };
+  }, []);
 
   const [duration, setDuration] = useState(String(hover?.params?.durationSec ?? HOVER_DEFAULT.durationSec));
   const [altitude, setAltitude] = useState(String(hover?.params?.altitudeFt ?? HOVER_DEFAULT.altitudeFt));
@@ -72,8 +89,8 @@ const WaypointActionMenu = ({
   return (
     <Marker longitude={waypoint.position.lng} latitude={waypoint.position.lat} anchor="top-left" offset={[14, 16]}>
       <Box
+        ref={cardRef}
         onClick={stop}
-        onPointerDown={stop}
         sx={{ ...glassPane, width: 244, p: 1.25, cursor: 'default' }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: '7px', mb: 1 }}>
