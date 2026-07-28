@@ -32,3 +32,14 @@ body {
   background: var(--bg);
   color: var(--fg);
 }
+
+/* Loading treatment for calc-in-flight readouts. */
+@keyframes hud-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}

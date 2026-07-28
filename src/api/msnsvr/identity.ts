@@ -1,0 +1,55 @@
+import type { MessageInitShape } from '@bufbuild/protobuf';
+import { CallIdSchema } from '@/api/gen/MsnSvr_pb';
+
+/**
+ * MsnSvr client identity and tree addressing.
+ *
+ * Every MsnSvr request carries a CallId envelope, and the tree is addressed by
+ * a path of typed node ids (Mission → Route → Segment → RoutePoint). This
+ * module centralizes the fixed demo identity and the path helpers so the hooks
+ * stay declarative.
+ */
+
+/** Fixed for the demo — the same client and mission every time the app starts. */
+export const CLIENT_ID = 'route-planning-demo';
+export const MISSION_ID = 'demo-mission-1';
+export const PROTOCOL_VERSION = '1.0';
+
+/**
+ * Node type codes for the int32 `type` on IdType/ChildId. The server defines
+ * these; they are NOT in the proto.
+ *
+ * TODO: replace the placeholders with the real service constants before the
+ * create-route / create-segment flow will work.
+ */
+export const NodeType = {
+  Mission: 0,
+  Route: 0,
+  Segment: 0,
+  RoutePoint: 0,
+} as const;
+
+/** A single step in a tree path: a typed node id. */
+export interface NodeRef {
+  type: number;
+  id: string;
+}
+
+/** The mission root ref — the top of every path in the demo. */
+export const missionRef: NodeRef = { type: NodeType.Mission, id: MISSION_ID };
+
+/** Builds a ParentId (path from root) from an ordered list of node refs. */
+export const parentPath = (path: NodeRef[]) => ({ ids: path });
+
+let transactionSeq = 0;
+
+/**
+ * Fresh CallId per request. version + clientId are fixed; transactionId is
+ * unique so the server can correlate. Pass a context string to tag the call.
+ */
+export const callId = (context = ''): MessageInitShape<typeof CallIdSchema> => ({
+  version: PROTOCOL_VERSION,
+  clientId: CLIENT_ID,
+  transactionId: `${CLIENT_ID}-${(transactionSeq += 1)}`,
+  context,
+});

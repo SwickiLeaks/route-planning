@@ -7,28 +7,43 @@ import Collapse from '@mui/material/Collapse';
 import Typography from '@mui/material/Typography';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import DragHandleIcon from '@mui/icons-material/DragHandle';
-import SampleControls from '@/components/SampleControls';
+import RouteBuilderPanel from '@/components/builder/RouteBuilderPanel';
 import { surface } from '@/theme/tokens';
 
-const DEFAULT_HEIGHT = 240;
 const MIN_HEIGHT = 64;
 /** Dragging the section smaller than this snaps it fully closed. */
 const COLLAPSE_BELOW = 72;
-/** Cap so the panel can't swallow the whole map. */
-const MAX_HEIGHT_VH = 0.6;
+/** Cap so a manual drag can't swallow the whole map. */
+const MAX_HEIGHT_VH = 0.85;
 
 /**
  * Thin control strip floating over the top of the map. The chevron toggles an
- * expandable section for future controls; the grip on the section's bottom
- * edge drag-resizes it.
+ * expandable section; the grip drag-resizes it.
+ *
+ * The section sizes to its content by default (no scrollbars — it just grows as
+ * more is shown). Dragging the grip switches to a fixed height, and only then
+ * does it scroll when the content is taller than that height.
  */
 const ControlBar = () => {
   const [open, setOpen] = useState(false);
-  const [height, setHeight] = useState(DEFAULT_HEIGHT);
+  // null = size to content; a number = a manually dragged fixed height.
+  const [manualHeight, setManualHeight] = useState<number | null>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
   const drag = useRef<{ startY: number; startHeight: number } | null>(null);
 
+  const toggleOpen = () => {
+    const next = !open;
+    setOpen(next);
+    // Every fresh open sizes to content again.
+    if (!next) setManualHeight(null);
+  };
+
   const onGripPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
-    drag.current = { startY: event.clientY, startHeight: height };
+    // Anchor the drag at the current rendered height, whether auto or fixed,
+    // so the handle doesn't jump when switching out of content-sizing.
+    const current = contentRef.current?.offsetHeight ?? MIN_HEIGHT;
+    drag.current = { startY: event.clientY, startHeight: current };
+    setManualHeight(current);
     // Route all pointer events to the grip until release, even when the
     // cursor crosses the map — otherwise fast drags drop the handle.
     event.currentTarget.setPointerCapture(event.pointerId);
@@ -39,7 +54,7 @@ const ControlBar = () => {
 
     const max = Math.round(window.innerHeight * MAX_HEIGHT_VH);
     const next = drag.current.startHeight + (event.clientY - drag.current.startY);
-    setHeight(Math.min(max, Math.max(MIN_HEIGHT, next)));
+    setManualHeight(Math.min(max, Math.max(MIN_HEIGHT, next)));
   };
 
   const onGripPointerUp = (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -49,11 +64,11 @@ const ControlBar = () => {
       drag.current.startHeight + (event.clientY - drag.current.startY);
     drag.current = null;
 
-    // Dragged nearly shut → treat as intent to close, and restore a usable
-    // height for the next open instead of a sliver.
+    // Dragged nearly shut → treat as intent to close, and reset to content
+    // sizing for the next open.
     if (finalHeight < COLLAPSE_BELOW) {
       setOpen(false);
-      setHeight(DEFAULT_HEIGHT);
+      setManualHeight(null);
     }
   };
 
@@ -86,7 +101,7 @@ const ControlBar = () => {
           <Box sx={{ flex: 1 }} />
           <IconButton
             size="small"
-            onClick={() => setOpen((value) => !value)}
+            onClick={toggleOpen}
             aria-label={open ? 'Collapse control section' : 'Expand control section'}
             aria-expanded={open}
           >
@@ -102,15 +117,18 @@ const ControlBar = () => {
 
         <Collapse in={open}>
           <Box
+            ref={contentRef}
             sx={{
-              height,
-              overflow: 'auto',
+              // Content sizing by default (grows, never scrolls); a manual drag
+              // pins a fixed height and enables scrolling past it.
+              height: manualHeight ?? 'auto',
+              overflowY: manualHeight != null ? 'auto' : 'visible',
               borderTop: '1px solid',
               borderColor: 'divider',
               p: 1.5,
             }}
           >
-            <SampleControls />
+            <RouteBuilderPanel />
           </Box>
         </Collapse>
       </Paper>

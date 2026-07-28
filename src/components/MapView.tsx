@@ -9,8 +9,11 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { INITIAL_VIEW, MAX_BOUNDS, buildMapStyle } from '@/map/style';
 import { isWebGLAvailable } from '@/map/webgl';
 import RouteLayers from '@/components/RouteLayers';
+import RouteCalcOverlay from '@/components/hud/RouteCalcOverlay';
 import MapUnavailable from '@/components/MapUnavailable';
 import type { Route } from '@/types/proto';
+import type { RouteCalculation } from '@/calc/types';
+import type { BuilderRoute } from '@/route/routeBuilderTypes';
 
 /**
  * Teaches MapLibre to resolve `pmtiles://` URLs by range-requesting the local
@@ -29,9 +32,22 @@ const registerPmtilesProtocol = () => {
 
 interface MapViewProps {
   routes: Route[];
+  /** The route whose calc overlay is drawn on the map. */
+  activeRoute?: BuilderRoute | null;
+  calc?: RouteCalculation | null;
+  /** True while a calc is in flight — dims the map readouts. */
+  calculating?: boolean;
+  /** Fired on a click that misses every marker — used to clear selection. */
+  onBackgroundClick?: () => void;
 }
 
-const MapView = ({ routes }: MapViewProps) => {
+const MapView = ({
+  routes,
+  activeRoute,
+  calc,
+  calculating = false,
+  onBackgroundClick,
+}: MapViewProps) => {
   // Gate the first render on registration so the style can't request a
   // pmtiles:// URL before the handler exists.
   const [ready, setReady] = useState(protocolRegistered);
@@ -76,9 +92,13 @@ const MapView = ({ routes }: MapViewProps) => {
         dragRotate={false}
         touchZoomRotate={false}
         onError={handleError}
+        onClick={() => onBackgroundClick?.()}
         style={{ width: '100%', height: '100%' }}
       >
         <RouteLayers routes={routes} />
+        {activeRoute && calc && (
+          <RouteCalcOverlay route={activeRoute} calc={calc} calculating={calculating} />
+        )}
         {/* <NavigationControl position="top-right" showCompass={false} /> */}
         {/* <ScaleControl position="bottom-left" unit="nautical" /> */}
       </Map>
