@@ -1,8 +1,11 @@
+import { useEffect, useState } from 'react';
 import { Marker } from 'react-map-gl/maplibre';
 import Box from '@mui/material/Box';
 import { colors } from '@/theme/tokens';
 import { MONO, MUTED, PANEL_BORDER, fmtLb, glow } from '@/components/shared/hudStyle';
 import ActionBadge from '@/components/builder/ActionBadge';
+import { actionDef } from '@/route/actionCatalog';
+import WaypointActionMenu from '@/components/map/WaypointActionMenu';
 import type { BuilderWaypoint } from '@/route/routeBuilderTypes';
 
 interface WaypointMarkerProps {
@@ -14,6 +17,47 @@ interface WaypointMarkerProps {
   onSelect: () => void;
 }
 
+// Pill on the selected chip that opens the action popover; fills when Hover is set.
+const HoverPill = ({ active, onOpen }: { active: boolean; onOpen: () => void }) => {
+  const def = actionDef('hover');
+  return (
+    <Box
+      role="button"
+      aria-pressed={active}
+      onClick={(e) => {
+        e.stopPropagation();
+        onOpen();
+      }}
+      sx={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '4px',
+        px: '7px',
+        py: '3px',
+        borderRadius: '6px',
+        cursor: 'pointer',
+        userSelect: 'none',
+        fontFamily: MONO,
+        fontSize: 10.5,
+        fontWeight: 600,
+        letterSpacing: '0.06em',
+        color: active ? colors.black : def.color,
+        bgcolor: active ? def.color : 'transparent',
+        border: `1px ${active ? 'solid' : 'dashed'} ${def.color}${active ? '' : '88'}`,
+        transition: 'background-color 140ms, color 140ms, border-color 140ms, box-shadow 140ms',
+        '&:hover': {
+          borderStyle: 'solid',
+          bgcolor: active ? def.color : `${def.color}22`,
+          boxShadow: glow(def.color),
+        },
+      }}
+    >
+      <def.Icon sx={{ fontSize: 13 }} />
+      <span>{active ? 'HOVER' : '+ HOVER'}</span>
+    </Box>
+  );
+};
+
 // Waypoint marker: a diamond on the point plus a data chip beside it.
 const WaypointMarker = ({
   waypoint,
@@ -23,11 +67,18 @@ const WaypointMarker = ({
   selected,
   onSelect,
 }: WaypointMarkerProps) => {
+  const [menuOpen, setMenuOpen] = useState(false);
   const accent = selected ? colors.accent : isEndpoint ? colors.gold : colors.brown;
   const diamond = selected ? 18 : 14;
   const actions = waypoint.actions ?? [];
+  const hoverActive = actions.some((a) => a.type === 'hover');
   const lng = waypoint.position.lng;
   const lat = waypoint.position.lat;
+
+  // Close the action popover whenever this waypoint is deselected.
+  useEffect(() => {
+    if (!selected) setMenuOpen(false);
+  }, [selected]);
 
   const select = (e: { originalEvent: { stopPropagation: () => void } }) => {
     e.originalEvent.stopPropagation();
@@ -120,15 +171,25 @@ const WaypointMarker = ({
             <span>{fmtLb(remainingFuelLb)} lb</span>
           </Box>
 
-          {actions.length > 0 && (
+          {selected ? (
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '4px', mt: '1px' }}>
-              {actions.map((a) => (
-                <ActionBadge key={a.id} type={a.type} onMap />
-              ))}
+              <HoverPill active={hoverActive} onOpen={() => setMenuOpen((o) => !o)} />
             </Box>
+          ) : (
+            actions.length > 0 && (
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '4px', mt: '1px' }}>
+                {actions.map((a) => (
+                  <ActionBadge key={a.id} type={a.type} onMap />
+                ))}
+              </Box>
+            )
           )}
         </Box>
       </Marker>
+
+      {selected && menuOpen && (
+        <WaypointActionMenu waypoint={waypoint} onClose={() => setMenuOpen(false)} />
+      )}
     </>
   );
 };

@@ -32,7 +32,7 @@ type Action =
   | { type: 'updateWaypoint'; id: string; patch: Partial<BuilderWaypoint> }
   | { type: 'selectWaypoint'; id: string | null }
   | { type: 'setPlacing'; value: boolean }
-  | { type: 'addAction'; waypointId: string; actionType: WaypointActionType }
+  | { type: 'addAction'; waypointId: string; actionType: WaypointActionType; params?: ActionParams }
   | { type: 'updateAction'; waypointId: string; actionId: string; params: ActionParams }
   | { type: 'removeAction'; waypointId: string; actionId: string };
 
@@ -114,7 +114,11 @@ const reducer = (state: State, action: Action): State => {
             ...wp,
             actions: [
               ...(wp.actions ?? []),
-              { id: uid('act'), type: action.actionType, params: defaultParams(action.actionType, wp) },
+              {
+                id: uid('act'),
+                type: action.actionType,
+                params: { ...defaultParams(action.actionType, wp), ...action.params },
+              },
             ],
           };
         }),
@@ -152,7 +156,7 @@ interface RouteBuilderValue extends State {
   updateWaypoint: (id: string, patch: Partial<BuilderWaypoint>) => void;
   selectWaypoint: (id: string | null) => void;
   setPlacing: (value: boolean) => void;
-  addAction: (waypointId: string, actionType: WaypointActionType) => void;
+  addAction: (waypointId: string, actionType: WaypointActionType, params?: ActionParams) => void;
   updateAction: (waypointId: string, actionId: string, params: ActionParams) => void;
   removeAction: (waypointId: string, actionId: string) => void;
 }
@@ -183,8 +187,8 @@ export const RouteBuilderProvider = ({
         dispatch({ type: 'updateWaypoint', id, patch }),
       selectWaypoint: (id: string | null) => dispatch({ type: 'selectWaypoint', id }),
       setPlacing: (value: boolean) => dispatch({ type: 'setPlacing', value }),
-      addAction: (waypointId: string, actionType: WaypointActionType) =>
-        dispatch({ type: 'addAction', waypointId, actionType }),
+      addAction: (waypointId: string, actionType: WaypointActionType, params?: ActionParams) =>
+        dispatch({ type: 'addAction', waypointId, actionType, params }),
       updateAction: (waypointId: string, actionId: string, params: ActionParams) =>
         dispatch({ type: 'updateAction', waypointId, actionId, params }),
       removeAction: (waypointId: string, actionId: string) =>
