@@ -3,7 +3,7 @@ interface MapUnavailableProps {
   detail: string;
 }
 
-/** Shown in place of the map when it can't render — never leave the area blank. */
+// Fallback shown in place of the map when it can't render.
 const MapUnavailable = ({ title, detail }: MapUnavailableProps) => {
   return (
     <div

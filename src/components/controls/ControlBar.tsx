@@ -2,24 +2,17 @@ import { useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
 import Box from '@mui/material/Box';
 import DragHandleIcon from '@mui/icons-material/DragHandle';
-import { glassPane } from '@/components/hud/hudStyle';
-import { TOP_PANES } from '@/components/topbar/topPaneRegistry';
-import type { TopPane } from '@/components/topbar/topPaneRegistry';
-import ControlTile from '@/components/topbar/ControlTile';
+import { glassPane } from '@/components/shared/hudStyle';
+import { TOP_PANES } from '@/components/controls/topPaneRegistry';
+import type { TopPane } from '@/components/controls/topPaneRegistry';
+import ControlTile from '@/components/controls/ControlTile';
 
 const MIN_HEIGHT = 64;
-/** Dragging the top pane smaller than this snaps it closed. */
 const COLLAPSE_BELOW = 72;
-/** Cap so a manual drag can't swallow the whole map. */
 const MAX_HEIGHT_VH = 0.85;
-/** Where docked panes start, below the tile row. */
 const PANE_TOP = 66;
 
-/**
- * Top control dock: a row of glass tiles that each open their pane in the dock
- * it declares — tools drop down from the top, Route Manager docks on the left.
- * Shares the map-fly fade so it recedes while the map is flown.
- */
+// Top control dock: a row of glass tiles that open panes in their declared dock.
 const ControlBar = ({ faded = false }: { faded?: boolean }) => {
   const [active, setActive] = useState<{ top: string | null; left: string | null }>({
     top: null,
@@ -68,9 +61,7 @@ const ControlBar = ({ faded = false }: { faded?: boolean }) => {
   };
 
   return (
-    // Full-area, click-through overlay; only the tiles and panes catch events.
     <Box sx={{ position: 'absolute', inset: 0, zIndex: 2, pointerEvents: 'none' }}>
-      {/* Tile row. */}
       <Box
         sx={{
           position: 'absolute',
@@ -93,14 +84,12 @@ const ControlBar = ({ faded = false }: { faded?: boolean }) => {
         ))}
       </Box>
 
-      {/* Top drop pane. */}
       {topPane && (
         <Box
           sx={{
             position: 'absolute',
             top: PANE_TOP,
             left: '50%',
-            // Match the bottom results field width.
             width: 'min(1320px, calc(100vw - 24px))',
             ...fade,
             transform: `translateX(-50%) translateY(${faded ? -12 : 0}px)`,
@@ -119,7 +108,6 @@ const ControlBar = ({ faded = false }: { faded?: boolean }) => {
             </Box>
           </Box>
 
-          {/* Resize grip. */}
           <Box
             onPointerDown={onGripPointerDown}
             onPointerMove={onGripPointerMove}
@@ -153,7 +141,6 @@ const ControlBar = ({ faded = false }: { faded?: boolean }) => {
         </Box>
       )}
 
-      {/* Left docked pane. */}
       {leftPane && (
         <Box
           sx={{

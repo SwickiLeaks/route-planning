@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import Box from '@mui/material/Box';
+import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
-import { MUTED } from '@/components/hud/hudStyle';
 import { useRouteBuilder } from '@/route/RouteBuilderContext';
 import type { BuilderWaypoint } from '@/route/routeBuilderTypes';
 
+// Parses a number, or null if non-finite or out of range.
 const parse = (raw: string, max?: number): number | null => {
   const n = Number(raw);
   if (!Number.isFinite(n)) return null;
@@ -12,19 +12,7 @@ const parse = (raw: string, max?: number): number | null => {
   return n;
 };
 
-const labelSx = {
-  fontSize: 12,
-  fontWeight: 600,
-  color: MUTED,
-  textAlign: 'right' as const,
-  whiteSpace: 'nowrap' as const,
-  alignSelf: 'center' as const,
-};
-
-/**
- * Edits the selected waypoint's details live. Remounted per waypoint (via key)
- * so the fields seed from the current values; edits flow straight to the store.
- */
+// Live editor for the selected waypoint's name, position, and altitude.
 const WaypointDetailsEditor = ({ waypoint }: { waypoint: BuilderWaypoint }) => {
   const { updateWaypoint } = useRouteBuilder();
   const [name, setName] = useState(waypoint.name);
@@ -55,34 +43,42 @@ const WaypointDetailsEditor = ({ waypoint }: { waypoint: BuilderWaypoint }) => {
     if (n !== null) updateWaypoint(waypoint.id, { altitudeFt: n });
   };
 
-  const field = { size: 'small' as const, fullWidth: true };
+  const field = { size: 'small' as const };
 
   return (
-    <Box
-      sx={{
-        display: 'grid',
-        gridTemplateColumns: 'auto 1fr auto 1fr',
-        columnGap: 1.5,
-        rowGap: 1.25,
-        alignItems: 'center',
-        maxWidth: 640,
-      }}
-    >
-      <Box sx={labelSx}>Name</Box>
-      <Box sx={{ gridColumn: 'span 3' }}>
-        <TextField {...field} value={name} onChange={(e) => commitName(e.target.value)} />
-      </Box>
-
-      <Box sx={labelSx}>Latitude</Box>
-      <TextField {...field} value={lat} error={latN == null} onChange={(e) => commitLat(e.target.value)} />
-      <Box sx={labelSx}>Longitude</Box>
-      <TextField {...field} value={lng} error={lngN == null} onChange={(e) => commitLng(e.target.value)} />
-
-      <Box sx={labelSx}>Altitude (ft)</Box>
-      <TextField {...field} value={alt} placeholder="optional" onChange={(e) => commitAlt(e.target.value)} />
-      <Box />
-      <Box />
-    </Box>
+    <Stack direction="row" spacing={1.25} useFlexGap sx={{ flexWrap: 'wrap', alignItems: 'flex-start' }}>
+      <TextField
+        {...field}
+        label="Name"
+        value={name}
+        onChange={(e) => commitName(e.target.value)}
+        sx={{ flex: '2 1 12rem' }}
+      />
+      <TextField
+        {...field}
+        label="Latitude"
+        value={lat}
+        error={latN == null}
+        onChange={(e) => commitLat(e.target.value)}
+        sx={{ flex: '1 1 8.5rem' }}
+      />
+      <TextField
+        {...field}
+        label="Longitude"
+        value={lng}
+        error={lngN == null}
+        onChange={(e) => commitLng(e.target.value)}
+        sx={{ flex: '1 1 8.5rem' }}
+      />
+      <TextField
+        {...field}
+        label="Altitude (ft)"
+        value={alt}
+        placeholder="optional"
+        onChange={(e) => commitAlt(e.target.value)}
+        sx={{ flex: '1 1 8rem' }}
+      />
+    </Stack>
   );
 };
 

@@ -6,7 +6,7 @@ const M_PER_NM = 1852;
 const toRad = (deg: number) => (deg * Math.PI) / 180;
 const toDeg = (rad: number) => (rad * 180) / Math.PI;
 
-/** Great-circle distance between two points, in nautical miles. */
+// Great-circle distance between two points, in nautical miles.
 export const distanceNm = (a: LatLng, b: LatLng): number => {
   const dLat = toRad(b.lat - a.lat);
   const dLng = toRad(b.lng - a.lng);
@@ -20,7 +20,7 @@ export const distanceNm = (a: LatLng, b: LatLng): number => {
   return (2 * EARTH_RADIUS_M * Math.asin(Math.sqrt(h))) / M_PER_NM;
 };
 
-/** Initial great-circle bearing from a to b, in degrees (0–360, true). */
+// Initial great-circle bearing from a to b, in degrees (true).
 export const bearingDeg = (a: LatLng, b: LatLng): number => {
   const lat1 = toRad(a.lat);
   const lat2 = toRad(b.lat);
@@ -34,7 +34,7 @@ export const bearingDeg = (a: LatLng, b: LatLng): number => {
   return (toDeg(Math.atan2(y, x)) + 360) % 360;
 };
 
-/** Midpoint of a leg (planar average — fine at tour-leg distances). */
+// Midpoint of a leg, as a planar average.
 export const midpoint = (a: LatLng, b: LatLng): LatLng => ({
   lat: (a.lat + b.lat) / 2,
   lng: (a.lng + b.lng) / 2,

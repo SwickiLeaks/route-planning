@@ -5,21 +5,22 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
 import AddIcon from '@mui/icons-material/Add';
+import CheckIcon from '@mui/icons-material/Check';
 import CloseIcon from '@mui/icons-material/Close';
 import { colors } from '@/theme/tokens';
-import { MONO, MUTED } from '@/components/hud/hudStyle';
+import { MONO, MUTED } from '@/components/shared/hudStyle';
 import { useRouteBuilder } from '@/route/RouteBuilderContext';
 import { ACTION_CATALOG, actionDef } from '@/route/actionCatalog';
 import type { WaypointAction } from '@/route/routeBuilderTypes';
 
-/** Parses a numeric field to a number, or undefined when blank/invalid. */
+// Parses a numeric field to a number, or undefined when blank/invalid.
 const num = (raw: string): number | undefined => {
   if (raw.trim() === '') return undefined;
   const n = Number(raw);
   return Number.isFinite(n) ? n : undefined;
 };
 
-/** An editable card for one placed action (Hover params shown inline). */
+// Editable card for one placed action, with inline hover params.
 const ActionCard = ({
   waypointId,
   action,
@@ -91,13 +92,14 @@ const ActionCard = ({
   );
 };
 
+// Small monospace unit adornment for a text field.
 const Adorn = ({ children }: { children: string }) => (
   <Box component="span" sx={{ fontSize: 11, color: MUTED, fontFamily: MONO }}>
     {children}
   </Box>
 );
 
-/** Actions for the selected waypoint: add actions and edit their parameters. */
+// Adds actions to the selected waypoint and edits their parameters.
 const WaypointActionsEditor = () => {
   const { route, selectedWaypointId, addAction } = useRouteBuilder();
   const wp = route.waypoints.find((w) => w.id === selectedWaypointId);
@@ -117,18 +119,22 @@ const WaypointActionsEditor = () => {
       <Stack direction="row" spacing={1} useFlexGap sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
         <Typography sx={{ fontSize: 13, fontWeight: 600, color: colors.white }}>{wp.name}</Typography>
         <Box sx={{ flex: 1 }} />
-        {ACTION_CATALOG.map((def) => (
-          <Button
-            key={def.type}
-            size="small"
-            variant="outlined"
-            color="primary"
-            startIcon={<AddIcon />}
-            onClick={() => addAction(wp.id, def.type)}
-          >
-            {def.label}
-          </Button>
-        ))}
+        {ACTION_CATALOG.map((def) => {
+          const present = actions.some((a) => a.type === def.type);
+          return (
+            <Button
+              key={def.type}
+              size="small"
+              variant="outlined"
+              color="primary"
+              disabled={present}
+              startIcon={present ? <CheckIcon /> : <AddIcon />}
+              onClick={() => addAction(wp.id, def.type)}
+            >
+              {def.label}
+            </Button>
+          );
+        })}
       </Stack>
 
       {actions.length === 0 ? (

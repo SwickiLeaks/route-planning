@@ -10,13 +10,12 @@ import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable';
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import { MUTED } from '@/components/hud/hudStyle';
+import { MUTED } from '@/components/shared/hudStyle';
 import { useRouteBuilder } from '@/route/RouteBuilderContext';
 import WaypointChip from '@/components/builder/WaypointChip';
 import WaypointDetailsEditor from '@/components/builder/WaypointDetailsEditor';
 import WaypointActionsEditor from '@/components/builder/WaypointActionsEditor';
 
-/** Shared section-header style: readable sans, muted, gentle spacing. */
 const sectionLabelSx = {
   fontSize: 10.5,
   fontWeight: 600,
@@ -26,14 +25,13 @@ const sectionLabelSx = {
   mb: 0.75,
 };
 
-/** The route builder: reorder waypoints by drag, and act on the selected one. */
+// Route builder: reorder waypoints by drag and edit the selected one.
 const RouteBuilderPanel = () => {
   const { route, selectedWaypointId, selectWaypoint, removeWaypoint, moveWaypoint } =
     useRouteBuilder();
 
   const selectedWaypoint = route.waypoints.find((w) => w.id === selectedWaypointId) ?? null;
 
-  // A small drag threshold so clicking a chip to select doesn't start a drag.
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
   const onDragEnd = (event: DragEndEvent) => {

@@ -1,55 +1,26 @@
-/**
- * Design tokens — the single source of truth for color.
- *
- * Everything themed reads from here: the MUI theme (src/theme/index.ts), the
- * CSS variables injected by CssBaseline, and the map styling (route colors,
- * hillshade tint). To try a different theme, edit this file and nothing else.
- *
- * Direction: Apache-style dark cockpit — a neutral near-black charcoal base (no
- * olive wash), high-contrast bone inks, with a refined tactical green as the
- * primary accent and amber / maroon / red as subtle brighter accents.
- */
-
-/** Raw palette. */
 export const colors = {
-  black: '#0b0c0d',
-  /** Neutral bone off-white. */
-  white: '#e6e6e1',
-  /** Primary tactical accent — muted avionics green. */
-  accent: '#7fa270',
-  /** Subtle warm accent — amber. */
-  gold: '#d7a444',
-  /** Subtle deep accent. */
-  maroon: '#8c3f46',
-  /** Alert / critical only. */
-  red: '#d64a3f',
-  /** Neutral tan secondary ink. */
-  brown: '#a89f8a',
-  /** Olive drab — muted secondary. */
-  olive: '#6a6f4f',
+  black: '#0a0a0b',
+  white: '#e7e3d9', // warm off-white ink
+  accent: '#e0953c', // night amber-orange accent
+  gold: '#e8b84c', // yellow-amber, caution
+  maroon: '#9a565c', // deep accent, rare
+  red: '#df564d', // alert / critical only
+  brown: '#9c9790', // secondary ink
+  olive: '#82817b', // neutral secondary
 } as const;
 
-/** Derived surfaces — neutral charcoal off near-black (no color wash). */
 export const surface = {
-  /** App background. */
-  bg: '#0d0e0f',
-  /** Opaque panel (headers, docked chrome). */
-  panel: '#16171a',
-  /** Translucent panel floating over the map. */
-  overlay: 'rgba(11, 12, 13, 0.9)',
-  /** Hairlines and dividers. */
-  border: '#2b2d31',
+  bg: '#0e0e0f', // app background
+  panel: '#161618', // opaque panel
+  overlay: 'rgba(11, 11, 12, 0.9)', // translucent panel over map
+  border: '#2a2a2d', // hairlines and dividers
 } as const;
 
-/**
- * Map accents, in draw-priority order. The active route uses the green accent;
- * the warmer colors sit later as subtle differentiators.
- */
 export const mapAccents = {
   routeColors: [colors.accent, colors.gold, colors.brown, colors.maroon],
   routeCasing: colors.black,
   labelHalo: colors.black,
-  hillshadeShadow: '#000000',
-  hillshadeHighlight: colors.brown,
-  hillshadeAccent: '#17181b',
+  hillshadeShadow: '#000000', // FROZEN terrain literal
+  hillshadeHighlight: '#b0a184', // FROZEN terrain literal
+  hillshadeAccent: '#191b12', // FROZEN terrain literal
 } as const;

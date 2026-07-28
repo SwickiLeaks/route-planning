@@ -6,10 +6,11 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import RouteIcon from '@mui/icons-material/Route';
 import AddIcon from '@mui/icons-material/Add';
 import { colors } from '@/theme/tokens';
-import { MONO, MUTED, FAINT } from '@/components/hud/hudStyle';
+import { MONO, MUTED, FAINT } from '@/components/shared/hudStyle';
 import { useRouteBuilder } from '@/route/RouteBuilderContext';
 import { distanceNm } from '@/map/geo';
 
+// Sums leg distances across the waypoint list in nautical miles.
 const totalNm = (points: { position: { lat: number; lng: number } }[]): number => {
   let sum = 0;
   for (let i = 1; i < points.length; i += 1) {
@@ -18,6 +19,7 @@ const totalNm = (points: { position: { lat: number; lng: number } }[]): number =
   return sum;
 };
 
+// A centered value-over-label stat readout.
 const Stat = ({ value, label }: { value: string; label: string }) => (
   <Box sx={{ textAlign: 'center' }}>
     <Box sx={{ fontFamily: MONO, fontSize: 15, color: colors.white }}>{value}</Box>
@@ -25,10 +27,7 @@ const Stat = ({ value, label }: { value: string; label: string }) => (
   </Box>
 );
 
-/**
- * Selects among available routes. The demo carries a single route, shown as the
- * active selection; multi-route management is scaffolded for later.
- */
+// Route selector; the demo carries one active route for now.
 const RouteManagerPane = () => {
   const { route } = useRouteBuilder();
   const nm = totalNm(route.waypoints);
@@ -39,7 +38,6 @@ const RouteManagerPane = () => {
         Routes
       </Typography>
 
-      {/* The active route card. */}
       <Box
         sx={{
           display: 'flex',

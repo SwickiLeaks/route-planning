@@ -2,11 +2,7 @@ import { useEffect, useState } from 'react';
 import type { Route } from '@/types/proto';
 import { fetchRoutes } from '@/api/client';
 
-/**
- * Kept dependency-free until the data-fetching library is chosen. When React
- * Query lands this becomes a `useQuery` call against the same `fetchRoutes`,
- * and the returned shape stays compatible.
- */
+// Loads routes and tracks loading and error state.
 export const useRoutes = () => {
   const [data, setData] = useState<Route[]>([]);
   const [loading, setLoading] = useState(true);

@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react';
 import Box from '@mui/material/Box';
 import { colors } from '@/theme/tokens';
-import { glassPane } from '@/components/hud/hudStyle';
+import { glassPane } from '@/components/shared/hudStyle';
 
 interface ControlTileProps {
   icon: ReactElement;
@@ -10,7 +10,7 @@ interface ControlTileProps {
   onClick: () => void;
 }
 
-/** A glass launcher tile — same language as the bottom HUD tiles. */
+// A glass launcher tile matching the bottom HUD tiles.
 const ControlTile = ({ icon, label, active, onClick }: ControlTileProps) => (
   <Box
     onClick={onClick}

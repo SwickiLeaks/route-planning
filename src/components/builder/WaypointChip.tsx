@@ -6,7 +6,7 @@ import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import CloseIcon from '@mui/icons-material/Close';
 import ArrowRightAltIcon from '@mui/icons-material/ArrowRightAlt';
 import { colors } from '@/theme/tokens';
-import { MONO, MUTED, FAINT } from '@/components/hud/hudStyle';
+import { MONO, MUTED, FAINT } from '@/components/shared/hudStyle';
 import ActionBadge from '@/components/builder/ActionBadge';
 import type { BuilderWaypoint } from '@/route/routeBuilderTypes';
 
@@ -14,17 +14,12 @@ interface WaypointChipProps {
   waypoint: BuilderWaypoint;
   index: number;
   selected: boolean;
-  /** Show the connector arrow to the next waypoint. */
   showArrow: boolean;
   onSelect: () => void;
   onRemove: () => void;
 }
 
-/**
- * A route-order node: an index tab, name, coordinates, and an actions row.
- * The connector arrow lives inside the sortable element so it travels with the
- * chip during a drag. Drag the handle to reorder; click to select.
- */
+// Sortable route-order node: index, name, coordinates, and actions row.
 const WaypointChip = ({
   waypoint,
   index,
@@ -66,7 +61,6 @@ const WaypointChip = ({
           boxShadow: selected ? `0 4px 16px rgba(0,0,0,0.4)` : 'none',
         }}
       >
-        {/* Header: drag handle · index · name · remove. */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25, pr: 0.25 }}>
           <Box
             {...attributes}
@@ -132,7 +126,6 @@ const WaypointChip = ({
           </IconButton>
         </Box>
 
-        {/* Coordinates. */}
         <Box
           sx={{
             px: '8px',
@@ -145,7 +138,6 @@ const WaypointChip = ({
           {waypoint.position.lat.toFixed(3)}, {waypoint.position.lng.toFixed(3)}
         </Box>
 
-        {/* Actions row — only present when the waypoint carries actions. */}
         {actions.length > 0 && (
           <Box
             sx={{

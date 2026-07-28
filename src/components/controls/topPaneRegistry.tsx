@@ -6,7 +6,6 @@ import RouteManagerPane from '@/components/builder/RouteManagerPane';
 import RouteBuilderPanel from '@/components/builder/RouteBuilderPanel';
 import WaypointCreatorPane from '@/components/builder/WaypointCreatorPane';
 
-/** Where a control's pane appears when its tile is selected. */
 export type PaneDock = 'top' | 'left';
 
 export interface TopPane {
@@ -17,11 +16,6 @@ export interface TopPane {
   content: ReactNode;
 }
 
-/**
- * The controls in the top tile bar. Clicking a tile opens its pane in the dock
- * it declares. To add a control: add an entry here — the tile and toggle
- * behavior come free.
- */
 export const TOP_PANES: TopPane[] = [
   {
     id: 'routes',

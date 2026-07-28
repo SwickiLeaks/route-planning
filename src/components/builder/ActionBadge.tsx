@@ -1,15 +1,14 @@
 import Box from '@mui/material/Box';
-import { MONO } from '@/components/hud/hudStyle';
+import { MONO } from '@/components/shared/hudStyle';
 import { actionDef } from '@/route/actionCatalog';
 import type { WaypointActionType } from '@/route/routeBuilderTypes';
 
 interface ActionBadgeProps {
   type: WaypointActionType;
-  /** Slightly larger, glowing variant for over-the-map markers. */
   onMap?: boolean;
 }
 
-/** Catalog-driven action badge: colored icon + short code. Used on chips and markers. */
+// Catalog-driven action badge: colored icon plus short code.
 const ActionBadge = ({ type, onMap = false }: ActionBadgeProps) => {
   const def = actionDef(type);
   return (
@@ -26,7 +25,7 @@ const ActionBadge = ({ type, onMap = false }: ActionBadgeProps) => {
         letterSpacing: '0.06em',
         fontWeight: 600,
         color: def.color,
-        bgcolor: onMap ? 'rgba(17,18,20,0.92)' : `${def.color}1f`,
+        bgcolor: onMap ? 'rgba(16,17,19,0.92)' : `${def.color}1f`,
         border: `1px solid ${def.color}${onMap ? '99' : '66'}`,
         whiteSpace: 'nowrap',
       }}

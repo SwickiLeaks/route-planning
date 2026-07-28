@@ -3,10 +3,6 @@ import { colors, surface } from '@/theme/tokens';
 
 export { colors, surface, mapAccents } from '@/theme/tokens';
 
-/**
- * Registers `maroon` as a first-class palette color so components can take
- * color="maroon" like any built-in. Add future custom accents the same way.
- */
 declare module '@mui/material/styles' {
   interface Palette {
     maroon: Palette['primary'];
@@ -26,14 +22,8 @@ declare module '@mui/material/Chip' {
   }
 }
 
-/** Used only to derive light/dark/contrast variants for custom colors. */
 const derive = createTheme({ palette: { mode: 'dark' } });
 
-/**
- * Core theme: dark, warm, tactical. Bright palette entries are accents on
- * interactive elements, never surfaces. System font stack on purpose — the app
- * makes no runtime network calls, so no Google-hosted Roboto.
- */
 export const theme = createTheme({
   palette: {
     mode: 'dark',
@@ -53,7 +43,6 @@ export const theme = createTheme({
       name: 'maroon',
     }),
   },
-  // Sharp corners read tactical; roundness reads consumer.
   shape: { borderRadius: 2 },
   typography: {
     fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
@@ -64,8 +53,6 @@ export const theme = createTheme({
     },
   },
   components: {
-    // Re-declare the CSS variables from tokens so non-MUI code (index.css
-    // consumers like MapUnavailable) stays in sync with the theme.
     MuiCssBaseline: {
       styleOverrides: {
         ':root': {
@@ -77,11 +64,9 @@ export const theme = createTheme({
         },
       },
     },
-    // Kill the elevation lightening gradient — panels should darken, not glow.
     MuiPaper: {
       styleOverrides: { root: { backgroundImage: 'none' } },
     },
-    // Dense by default; a control bar is not a marketing page.
     MuiButton: { defaultProps: { size: 'small', disableElevation: true } },
     MuiIconButton: { defaultProps: { size: 'small' } },
     MuiTextField: { defaultProps: { size: 'small' } },

@@ -1,9 +1,9 @@
 import Box from '@mui/material/Box';
 import { colors } from '@/theme/tokens';
 import type { RouteCalculation } from '@/calc/types';
-import { MONO, MUTED, FAINT, fmtLb, fuelStateColor } from '@/components/hud/hudStyle';
+import { MONO, MUTED, FAINT, fmtLb, fuelStateColor } from '@/components/shared/hudStyle';
 
-/** Linear interpolate between two #rrggbb colors. */
+// Linear interpolate between two #rrggbb colors.
 const lerpHex = (a: string, b: string, t: number): string => {
   const ca = [1, 3, 5].map((i) => parseInt(a.slice(i, i + 2), 16));
   const cb = [1, 3, 5].map((i) => parseInt(b.slice(i, i + 2), 16));
@@ -11,11 +11,7 @@ const lerpHex = (a: string, b: string, t: number): string => {
   return `#${mix.map((x) => x.toString(16).padStart(2, '0')).join('')}`;
 };
 
-/**
- * Fuel consumption across the whole route: the tank as one bar, each leg's burn
- * a proportional segment (warm gradient from first leg to last), then the fuel
- * still on board, with the reserve floor marked at the right.
- */
+// Route-wide fuel bar: per-leg burn segments, fuel left, reserve floor.
 const FuelConsumption = ({ calc }: { calc: RouteCalculation }) => {
   const t = calc.totals;
   const capacity = t.startFuelLb;
@@ -27,7 +23,6 @@ const FuelConsumption = ({ calc }: { calc: RouteCalculation }) => {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-      {/* Header line. */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', fontSize: 11, color: MUTED }}>
         <span style={{ letterSpacing: '0.04em' }}>FUEL CONSUMPTION</span>
         <Box sx={{ display: 'flex', gap: '10px', fontFamily: MONO }}>
@@ -41,7 +36,6 @@ const FuelConsumption = ({ calc }: { calc: RouteCalculation }) => {
         </Box>
       </Box>
 
-      {/* The tank bar. */}
       <Box
         sx={{
           position: 'relative',
@@ -81,10 +75,8 @@ const FuelConsumption = ({ calc }: { calc: RouteCalculation }) => {
           );
         })}
 
-        {/* Fuel still on board. */}
         <Box sx={{ width: pct(t.remainingFuelLb), transition: 'width 300ms' }} />
 
-        {/* Reserve floor: faint zone + dashed threshold at the right. */}
         <Box
           sx={{
             position: 'absolute',
@@ -99,7 +91,6 @@ const FuelConsumption = ({ calc }: { calc: RouteCalculation }) => {
         />
       </Box>
 
-      {/* Reserve caption, aligned under the reserve zone. */}
       <Box sx={{ position: 'relative', height: 12 }}>
         <Box
           sx={{

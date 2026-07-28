@@ -8,6 +8,7 @@ interface RouteLayersProps {
   routes: Route[];
 }
 
+// Renders GeoJSON sources and layers for route lines and waypoints.
 const RouteLayers = ({ routes }: RouteLayersProps) => {
   const lines = useMemo(() => routesToLines(routes), [routes]);
   const waypoints = useMemo(() => routesToWaypoints(routes), [routes]);
@@ -15,7 +16,6 @@ const RouteLayers = ({ routes }: RouteLayersProps) => {
   return (
     <>
       <Source id="routes" type="geojson" data={lines}>
-        {/* Dark casing first, so the route stays legible over bright terrain. */}
         <Layer
           id="route-casing"
           type="line"
@@ -57,7 +57,6 @@ const RouteLayers = ({ routes }: RouteLayersProps) => {
             'text-size': 11,
             'text-offset': [0, 1.1],
             'text-anchor': 'top',
-            // Drop labels rather than overlap them when zoomed out.
             'text-optional': true,
           }}
           paint={{

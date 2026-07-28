@@ -8,14 +8,7 @@ import type {
   RouteCalculation,
 } from '@/calc/types';
 
-/**
- * Stand-in for the backend route-calculation service.
- *
- * Produces believable, DETERMINISTIC results from a route's geometry and
- * altitudes — climb legs burn more, so fuel flow tracks altitude change. Swap
- * this one function for the gRPC call when the calc service is wired; the
- * RouteCalculation shape it returns is what the whole HUD depends on.
- */
+// Deterministic stand-in for the backend route-calculation service.
 export const calculateRoute = (
   route: Route,
   perf: AircraftPerf = DEFAULT_AIRCRAFT,
@@ -32,8 +25,6 @@ export const calculateRoute = (
     const groundSpeedKt = perf.cruiseKt;
     const legTimeHr = groundSpeedKt > 0 ? distNm / groundSpeedKt : 0;
 
-    // Climbing burns more, descending a touch less — scale flow by altitude
-    // delta per nautical mile so the numbers move with the route.
     const climbFt = (to.altitudeFt ?? 0) - (from.altitudeFt ?? 0);
     const climbFactor = 1 + Math.max(-0.15, Math.min(0.35, climbFt / 8000));
     const fuelFlowLbHr = Math.round(perf.cruiseFuelFlowLbHr * climbFactor);

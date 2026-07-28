@@ -3,8 +3,8 @@ import { useMap } from 'react-map-gl/maplibre';
 import type { RouteCalculation } from '@/calc/types';
 import type { BuilderRoute } from '@/route/routeBuilderTypes';
 import { useRouteBuilder } from '@/route/RouteBuilderContext';
-import WaypointMarker from '@/components/hud/WaypointMarker';
-import LegCallout from '@/components/hud/LegCallout';
+import WaypointMarker from '@/components/map/WaypointMarker';
+import LegCallout from '@/components/map/LegCallout';
 
 interface RouteCalcOverlayProps {
   route: BuilderRoute;
@@ -12,13 +12,9 @@ interface RouteCalcOverlayProps {
   calculating?: boolean;
 }
 
-/**
- * Map-anchored calc overlay: a leg callout at every leg midpoint and an
- * interactable marker at every waypoint. Selection is read from the route
- * builder so clicking a marker and clicking a chip stay in sync.
- */
+// Map overlay drawing a callout per leg and a marker per waypoint.
 const RouteCalcOverlay = ({ route, calc, calculating = false }: RouteCalcOverlayProps) => {
-  const { selectedWaypointId, selectWaypoint } = useRouteBuilder();
+  const { selectedWaypointId, selectWaypoint, placing } = useRouteBuilder();
   const { current: map } = useMap();
   const lastIndex = route.waypoints.length - 1;
 
@@ -26,13 +22,10 @@ const RouteCalcOverlay = ({ route, calc, calculating = false }: RouteCalcOverlay
   const selLng = selected?.position.lng;
   const selLat = selected?.position.lat;
 
-  // Center the map on the selected waypoint (from a chip or a marker click).
-  // Keyed on its coordinates so reordering/renaming doesn't recenter — only a
-  // new selection or a moved point does.
   useEffect(() => {
-    if (!map || selLng == null || selLat == null) return;
+    if (placing || !map || selLng == null || selLat == null) return;
     map.easeTo({ center: [selLng, selLat], duration: 500 });
-  }, [map, selectedWaypointId, selLng, selLat]);
+  }, [map, placing, selectedWaypointId, selLng, selLat]);
 
   return (
     <>

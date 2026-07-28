@@ -1,6 +1,6 @@
 import Box from '@mui/material/Box';
 import { colors } from '@/theme/tokens';
-import { MONO, MUTED, FAINT, glassPane } from '@/components/hud/hudStyle';
+import { MONO, MUTED, FAINT, glassPane } from '@/components/shared/hudStyle';
 
 interface MetricTileProps {
   label: string;
@@ -9,7 +9,7 @@ interface MetricTileProps {
   accent?: string;
 }
 
-/** A single route metric as its own floating, see-through glass tile. */
+// A single route metric as a floating glass tile.
 const MetricTile = ({ label, value, unit, accent = colors.white }: MetricTileProps) => (
   <Box
     sx={{

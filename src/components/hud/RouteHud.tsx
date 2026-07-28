@@ -13,7 +13,7 @@ import {
   fmtMinSec,
   fmtNm,
   fuelStateColor,
-} from '@/components/hud/hudStyle';
+} from '@/components/shared/hudStyle';
 import MetricTile from '@/components/hud/MetricTile';
 import FuelConsumption from '@/components/hud/FuelConsumption';
 
@@ -21,11 +21,10 @@ interface RouteHudProps {
   route: BuilderRoute;
   calc: RouteCalculation;
   calculating?: boolean;
-  /** When true (map being flown), the HUD recedes to give the map priority. */
   faded?: boolean;
 }
 
-/** A compact action indicator shown under a waypoint node. */
+// A compact action indicator shown under a waypoint node.
 const ActionPip = ({ type }: { type: WaypointActionType }) => {
   const def = actionDef(type);
   return (
@@ -38,7 +37,7 @@ const ActionPip = ({ type }: { type: WaypointActionType }) => {
   );
 };
 
-/** A waypoint node in the legs strip: diamond over index, plus action pips. */
+// A waypoint node in the legs strip: diamond over index, plus action pips.
 const Node = ({
   waypoint,
   index,
@@ -61,7 +60,7 @@ const Node = ({
           transform: 'rotate(45deg)',
           borderRadius: '2px',
           border: `2px solid ${accent}`,
-          bgcolor: active ? accent : 'rgba(17,18,20,0.9)',
+          bgcolor: active ? accent : 'rgba(16,17,19,0.9)',
           boxShadow: active ? `0 0 9px ${accent}77` : 'none',
         }}
       />
@@ -79,7 +78,7 @@ const Node = ({
   );
 };
 
-/** A centered label-over-value stat that spreads within its grid column. */
+// A centered label-over-value stat that spreads within its grid column.
 const Stat = ({ label, value, unit, color = colors.white }: { label: string; value: string; unit?: string; color?: string }) => (
   <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', minWidth: 0 }}>
     <Box sx={{ fontSize: 9.5, letterSpacing: '0.05em', color: MUTED, textTransform: 'uppercase' }}>{label}</Box>
@@ -90,7 +89,7 @@ const Stat = ({ label, value, unit, color = colors.white }: { label: string; val
   </Box>
 );
 
-/** A leg card. Grows to help fill the row (uniformly), wrapping as legs add. */
+// A leg card that grows to fill the row and wraps as legs add.
 const Segment = ({ leg }: { leg: LegCalc }) => (
   <Box
     sx={{
@@ -126,11 +125,7 @@ const Segment = ({ leg }: { leg: LegCalc }) => (
   </Box>
 );
 
-/**
- * Bottom HUD: a cluster of floating, see-through glass panes rather than one
- * bar. Route metrics are individual tiles; the legs strip and fuel consumption
- * are their own panes. Together they read as a HUD layered over the map.
- */
+// Bottom HUD: a cluster of glass panes layered over the map.
 const RouteHud = ({ route, calc, calculating = false, faded = false }: RouteHudProps) => {
   const t = calc.totals;
   const stateColor = fuelStateColor(t.fuelState);
@@ -154,14 +149,12 @@ const RouteHud = ({ route, calc, calculating = false, faded = false }: RouteHudP
         flexDirection: 'column',
         alignItems: 'center',
         gap: 1,
-        // Recede while the map is flown; revive gently, pass clicks through.
         transform: `translateX(-50%) translateY(${faded ? 12 : 0}px)`,
         opacity: faded ? 0.12 : 1,
         pointerEvents: faded ? 'none' : 'auto',
         transition: `opacity ${faded ? 150 : 450}ms ease, transform ${faded ? 150 : 450}ms ease`,
       }}
     >
-      {/* Calculating flag floats above the cluster, undimmed. */}
       {calculating && (
         <Box
           sx={{
@@ -179,7 +172,6 @@ const RouteHud = ({ route, calc, calculating = false, faded = false }: RouteHudP
         </Box>
       )}
 
-      {/* Route metric tiles — individual panes. */}
       <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', justifyContent: 'center', ...dim }}>
         <MetricTile label="Distance" value={fmtNm(t.distanceNm)} unit="nm" />
         <MetricTile label="Route Time" value={fmtHrMin(t.routeTimeMin)} unit="ete" accent={colors.accent} />
@@ -188,9 +180,6 @@ const RouteHud = ({ route, calc, calculating = false, faded = false }: RouteHudP
         <MetricTile label="Avg Flow" value={fmtLb(t.avgFuelFlowLbHr)} unit="lb/hr" />
       </Box>
 
-      {/* Legs pane — leg cards grow to fill the width (no dead margins) and
-          wrap as the route grows. Each waypoint node stays paired with its
-          leg card; the final lone node doesn't stretch. */}
       <Box sx={{ ...glassPane, width: '100%', px: 1.5, py: 1.25, ...dim }}>
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '6px', rowGap: '10px' }}>
           {route.waypoints.map((wp, i) => {
@@ -202,7 +191,6 @@ const RouteHud = ({ route, calc, calculating = false, faded = false }: RouteHudP
                   display: 'flex',
                   alignItems: 'flex-start',
                   gap: '6px',
-                  // Leg pairs grow to fill the row; the trailing node stays snug.
                   flex: hasLeg ? '1 1 240px' : '0 0 auto',
                   minWidth: 0,
                 }}
@@ -215,7 +203,6 @@ const RouteHud = ({ route, calc, calculating = false, faded = false }: RouteHudP
         </Box>
       </Box>
 
-      {/* Fuel consumption pane. */}
       <Box sx={{ ...glassPane, width: '100%', px: 2, py: 1.25, ...dim }}>
         <FuelConsumption calc={calc} />
       </Box>

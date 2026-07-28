@@ -2,14 +2,9 @@ import { Marker } from 'react-map-gl/maplibre';
 import Box from '@mui/material/Box';
 import { colors } from '@/theme/tokens';
 import type { LegCalc } from '@/calc/types';
-import { MONO } from '@/components/hud/hudStyle';
+import { MONO } from '@/components/shared/hudStyle';
 
-/**
- * A minimal leg marker: a small circular badge with just the leg number,
- * centered on the leg. Deliberately a different shape from the rectangular
- * named waypoint chips so the two don't clash on a dense route — the full leg
- * stats live in the bottom HUD's legs pane. 22px (even) keeps it pixel-sharp.
- */
+// Small circular badge showing the leg number, centered on the leg.
 const LegCallout = ({ leg, calculating = false }: { leg: LegCalc; calculating?: boolean }) => (
   <Marker longitude={leg.midpoint.lng} latitude={leg.midpoint.lat} anchor="center">
     <Box
@@ -21,7 +16,7 @@ const LegCallout = ({ leg, calculating = false }: { leg: LegCalc; calculating?: 
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        bgcolor: 'rgba(15,16,18,0.8)',
+        bgcolor: 'rgba(15,15,17,0.8)',
         border: `1.5px solid ${colors.accent}aa`,
         fontFamily: MONO,
         fontSize: 11,

@@ -13,19 +13,16 @@ import type {
   WaypointActionType,
 } from '@/route/routeBuilderTypes';
 
-/** Sensible starting parameters for a newly added action. */
 const defaultParams = (type: WaypointActionType, wp: BuilderWaypoint): ActionParams =>
   type === 'hover' ? { durationSec: 60, altitudeFt: wp.altitudeFt } : {};
 
-/* ── IDs ──────────────────────────────────────────────────────────────── */
 let seq = 0;
 const uid = (prefix: string) => `${prefix}-${(seq += 1)}`;
-
-/* ── State + actions ──────────────────────────────────────────────────── */
 
 interface State {
   route: BuilderRoute;
   selectedWaypointId: string | null;
+  placing: boolean;
 }
 
 type Action =
@@ -34,6 +31,7 @@ type Action =
   | { type: 'moveWaypoint'; from: number; to: number }
   | { type: 'updateWaypoint'; id: string; patch: Partial<BuilderWaypoint> }
   | { type: 'selectWaypoint'; id: string | null }
+  | { type: 'setPlacing'; value: boolean }
   | { type: 'addAction'; waypointId: string; actionType: WaypointActionType }
   | { type: 'updateAction'; waypointId: string; actionId: string; params: ActionParams }
   | { type: 'removeAction'; waypointId: string; actionId: string };
@@ -104,16 +102,22 @@ const reducer = (state: State, action: Action): State => {
     case 'selectWaypoint':
       return { ...state, selectedWaypointId: action.id };
 
+    case 'setPlacing':
+      return { ...state, placing: action.value };
+
     case 'addAction':
       return {
         ...state,
-        route: mapWaypoint(route, action.waypointId, (wp) => ({
-          ...wp,
-          actions: [
-            ...(wp.actions ?? []),
-            { id: uid('act'), type: action.actionType, params: defaultParams(action.actionType, wp) },
-          ],
-        })),
+        route: mapWaypoint(route, action.waypointId, (wp) => {
+          if ((wp.actions ?? []).some((a) => a.type === action.actionType)) return wp;
+          return {
+            ...wp,
+            actions: [
+              ...(wp.actions ?? []),
+              { id: uid('act'), type: action.actionType, params: defaultParams(action.actionType, wp) },
+            ],
+          };
+        }),
       };
 
     case 'updateAction':
@@ -141,14 +145,13 @@ const reducer = (state: State, action: Action): State => {
   }
 };
 
-/* ── Context ──────────────────────────────────────────────────────────── */
-
 interface RouteBuilderValue extends State {
   addWaypoint: (position: LatLng, name?: string, altitudeFt?: number) => void;
   removeWaypoint: (id: string) => void;
   moveWaypoint: (from: number, to: number) => void;
   updateWaypoint: (id: string, patch: Partial<BuilderWaypoint>) => void;
   selectWaypoint: (id: string | null) => void;
+  setPlacing: (value: boolean) => void;
   addAction: (waypointId: string, actionType: WaypointActionType) => void;
   updateAction: (waypointId: string, actionId: string, params: ActionParams) => void;
   removeAction: (waypointId: string, actionId: string) => void;
@@ -156,6 +159,7 @@ interface RouteBuilderValue extends State {
 
 const RouteBuilderContext = createContext<RouteBuilderValue | null>(null);
 
+// Provides route-builder state and actions to descendants.
 export const RouteBuilderProvider = ({
   initialRoute,
   children,
@@ -166,25 +170,32 @@ export const RouteBuilderProvider = ({
   const [state, dispatch] = useReducer(reducer, {
     route: initialRoute,
     selectedWaypointId: null,
+    placing: false,
   });
 
-  const value = useMemo<RouteBuilderValue>(
+  const actions = useMemo(
     () => ({
-      ...state,
-      addWaypoint: (position, name, altitudeFt) =>
+      addWaypoint: (position: LatLng, name?: string, altitudeFt?: number) =>
         dispatch({ type: 'addWaypoint', position, name, altitudeFt }),
-      removeWaypoint: (id) => dispatch({ type: 'removeWaypoint', id }),
-      moveWaypoint: (from, to) => dispatch({ type: 'moveWaypoint', from, to }),
-      updateWaypoint: (id, patch) => dispatch({ type: 'updateWaypoint', id, patch }),
-      selectWaypoint: (id) => dispatch({ type: 'selectWaypoint', id }),
-      addAction: (waypointId, actionType) =>
+      removeWaypoint: (id: string) => dispatch({ type: 'removeWaypoint', id }),
+      moveWaypoint: (from: number, to: number) => dispatch({ type: 'moveWaypoint', from, to }),
+      updateWaypoint: (id: string, patch: Partial<BuilderWaypoint>) =>
+        dispatch({ type: 'updateWaypoint', id, patch }),
+      selectWaypoint: (id: string | null) => dispatch({ type: 'selectWaypoint', id }),
+      setPlacing: (value: boolean) => dispatch({ type: 'setPlacing', value }),
+      addAction: (waypointId: string, actionType: WaypointActionType) =>
         dispatch({ type: 'addAction', waypointId, actionType }),
-      updateAction: (waypointId, actionId, params) =>
+      updateAction: (waypointId: string, actionId: string, params: ActionParams) =>
         dispatch({ type: 'updateAction', waypointId, actionId, params }),
-      removeAction: (waypointId, actionId) =>
+      removeAction: (waypointId: string, actionId: string) =>
         dispatch({ type: 'removeAction', waypointId, actionId }),
     }),
-    [state],
+    [],
+  );
+
+  const value = useMemo<RouteBuilderValue>(
+    () => ({ ...state, ...actions }),
+    [state, actions],
   );
 
   return (
@@ -194,6 +205,7 @@ export const RouteBuilderProvider = ({
   );
 };
 
+// Reads the route-builder context, throwing if used outside its provider.
 export const useRouteBuilder = (): RouteBuilderValue => {
   const ctx = useContext(RouteBuilderContext);
   if (!ctx) throw new Error('useRouteBuilder must be used within RouteBuilderProvider');

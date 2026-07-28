@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-// NavigationControl / ScaleControl are also exported here if you re-enable them.
 import { Map } from 'react-map-gl/maplibre';
 import type { ErrorEvent } from 'react-map-gl/maplibre';
 import maplibregl from 'maplibre-gl';
@@ -8,20 +7,16 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 
 import { INITIAL_VIEW, MAX_BOUNDS, buildMapStyle } from '@/map/style';
 import { isWebGLAvailable } from '@/map/webgl';
-import RouteLayers from '@/components/RouteLayers';
-import RouteCalcOverlay from '@/components/hud/RouteCalcOverlay';
-import MapUnavailable from '@/components/MapUnavailable';
+import RouteLayers from '@/components/map/RouteLayers';
+import RouteCalcOverlay from '@/components/map/RouteCalcOverlay';
+import MapUnavailable from '@/components/map/MapUnavailable';
 import type { Route } from '@/types/proto';
 import type { RouteCalculation } from '@/calc/types';
 import type { BuilderRoute } from '@/route/routeBuilderTypes';
 
-/**
- * Teaches MapLibre to resolve `pmtiles://` URLs by range-requesting the local
- * archive. Registered once at module scope — re-registering throws, and React
- * 19 StrictMode double-invokes effects.
- */
 let protocolRegistered = false;
 
+// Registers the pmtiles:// protocol handler with MapLibre, once per module.
 const registerPmtilesProtocol = () => {
   if (protocolRegistered) return;
 
@@ -32,35 +27,29 @@ const registerPmtilesProtocol = () => {
 
 interface MapViewProps {
   routes: Route[];
-  /** The route whose calc overlay is drawn on the map. */
   activeRoute?: BuilderRoute | null;
   calc?: RouteCalculation | null;
-  /** True while a calc is in flight — dims the map readouts. */
   calculating?: boolean;
-  /** Fired on a click that misses every marker — used to clear selection. */
-  onBackgroundClick?: () => void;
-  /** True while the user is actively panning/zooming the map. */
+  onMapClick?: (lngLat: { lng: number; lat: number }) => void;
+  placing?: boolean;
   onInteractionChange?: (interacting: boolean) => void;
 }
 
+// Renders the MapLibre map with route layers and the calc overlay.
 const MapView = ({
   routes,
   activeRoute,
   calc,
   calculating = false,
-  onBackgroundClick,
+  onMapClick,
+  placing = false,
   onInteractionChange,
 }: MapViewProps) => {
-  // Debounces the "interaction ended" signal so continuous drags/zooms don't
-  // flicker the panes back on between frames.
   const restoreTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => {
     if (restoreTimer.current) clearTimeout(restoreTimer.current);
   }, []);
-  // Gate the first render on registration so the style can't request a
-  // pmtiles:// URL before the handler exists.
   const [ready, setReady] = useState(protocolRegistered);
-  // Checked once on mount — WebGL support doesn't change within a session.
   const [webglOk] = useState(isWebGLAvailable);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -71,7 +60,6 @@ const MapView = ({
 
   const mapStyle = useMemo(() => buildMapStyle(), []);
 
-  // Most likely on a GPU-less VM or with WebGL disabled in the browser.
   if (!webglOk) {
     return (
       <MapUnavailable
@@ -84,8 +72,6 @@ const MapView = ({
   if (!ready) return null;
 
   const handleError = (event: ErrorEvent) => {
-    // Surfaces style/tile/source failures that otherwise blank the map silently
-    // — e.g. missing public/map/*.pmtiles because `npm run map:fetch` hasn't run.
     console.error('[map] load error:', event.error);
     setLoadError(event.error?.message ?? 'Unknown map error');
   };
@@ -94,17 +80,14 @@ const MapView = ({
     <>
       <Map
         initialViewState={{ ...INITIAL_VIEW }}
-        // attributionControl={false}
         mapStyle={mapStyle}
         maxBounds={MAX_BOUNDS}
-        // Tour planning is a top-down task; keep the camera 2D and predictable.
         dragRotate={false}
         touchZoomRotate={false}
         onError={handleError}
-        onClick={() => onBackgroundClick?.()}
+        cursor={placing ? 'crosshair' : undefined}
+        onClick={(e) => onMapClick?.({ lng: e.lngLat.lng, lat: e.lngLat.lat })}
         onMoveStart={(e) => {
-          // Only user-driven moves have an originalEvent; ignore programmatic
-          // camera moves (e.g. centering on a selected waypoint).
           if (!e.originalEvent) return;
           if (restoreTimer.current) clearTimeout(restoreTimer.current);
           onInteractionChange?.(true);
@@ -119,8 +102,6 @@ const MapView = ({
         {activeRoute && calc && (
           <RouteCalcOverlay route={activeRoute} calc={calc} calculating={calculating} />
         )}
-        {/* <NavigationControl position="top-right" showCompass={false} /> */}
-        {/* <ScaleControl position="bottom-left" unit="nautical" /> */}
       </Map>
 
       {loadError && (
