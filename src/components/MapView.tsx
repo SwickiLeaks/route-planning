@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 // NavigationControl / ScaleControl are also exported here if you re-enable them.
 import { Map } from 'react-map-gl/maplibre';
 import type { ErrorEvent } from 'react-map-gl/maplibre';
@@ -39,6 +39,8 @@ interface MapViewProps {
   calculating?: boolean;
   /** Fired on a click that misses every marker — used to clear selection. */
   onBackgroundClick?: () => void;
+  /** True while the user is actively panning/zooming the map. */
+  onInteractionChange?: (interacting: boolean) => void;
 }
 
 const MapView = ({
@@ -47,7 +49,14 @@ const MapView = ({
   calc,
   calculating = false,
   onBackgroundClick,
+  onInteractionChange,
 }: MapViewProps) => {
+  // Debounces the "interaction ended" signal so continuous drags/zooms don't
+  // flicker the panes back on between frames.
+  const restoreTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (restoreTimer.current) clearTimeout(restoreTimer.current);
+  }, []);
   // Gate the first render on registration so the style can't request a
   // pmtiles:// URL before the handler exists.
   const [ready, setReady] = useState(protocolRegistered);
@@ -93,6 +102,17 @@ const MapView = ({
         touchZoomRotate={false}
         onError={handleError}
         onClick={() => onBackgroundClick?.()}
+        onMoveStart={(e) => {
+          // Only user-driven moves have an originalEvent; ignore programmatic
+          // camera moves (e.g. centering on a selected waypoint).
+          if (!e.originalEvent) return;
+          if (restoreTimer.current) clearTimeout(restoreTimer.current);
+          onInteractionChange?.(true);
+        }}
+        onMoveEnd={() => {
+          if (restoreTimer.current) clearTimeout(restoreTimer.current);
+          restoreTimer.current = setTimeout(() => onInteractionChange?.(false), 350);
+        }}
         style={{ width: '100%', height: '100%' }}
       >
         <RouteLayers routes={routes} />

@@ -7,10 +7,15 @@ import {
 } from 'react';
 import type { LatLng } from '@/types/proto';
 import type {
+  ActionParams,
   BuilderRoute,
   BuilderWaypoint,
   WaypointActionType,
 } from '@/route/routeBuilderTypes';
+
+/** Sensible starting parameters for a newly added action. */
+const defaultParams = (type: WaypointActionType, wp: BuilderWaypoint): ActionParams =>
+  type === 'hover' ? { durationSec: 60, altitudeFt: wp.altitudeFt } : {};
 
 /* ── IDs ──────────────────────────────────────────────────────────────── */
 let seq = 0;
@@ -30,6 +35,7 @@ type Action =
   | { type: 'updateWaypoint'; id: string; patch: Partial<BuilderWaypoint> }
   | { type: 'selectWaypoint'; id: string | null }
   | { type: 'addAction'; waypointId: string; actionType: WaypointActionType }
+  | { type: 'updateAction'; waypointId: string; actionId: string; params: ActionParams }
   | { type: 'removeAction'; waypointId: string; actionId: string };
 
 const arrayMove = <T,>(list: T[], from: number, to: number): T[] => {
@@ -103,7 +109,21 @@ const reducer = (state: State, action: Action): State => {
         ...state,
         route: mapWaypoint(route, action.waypointId, (wp) => ({
           ...wp,
-          actions: [...(wp.actions ?? []), { id: uid('act'), type: action.actionType }],
+          actions: [
+            ...(wp.actions ?? []),
+            { id: uid('act'), type: action.actionType, params: defaultParams(action.actionType, wp) },
+          ],
+        })),
+      };
+
+    case 'updateAction':
+      return {
+        ...state,
+        route: mapWaypoint(route, action.waypointId, (wp) => ({
+          ...wp,
+          actions: (wp.actions ?? []).map((a) =>
+            a.id === action.actionId ? { ...a, params: { ...a.params, ...action.params } } : a,
+          ),
         })),
       };
 
@@ -130,6 +150,7 @@ interface RouteBuilderValue extends State {
   updateWaypoint: (id: string, patch: Partial<BuilderWaypoint>) => void;
   selectWaypoint: (id: string | null) => void;
   addAction: (waypointId: string, actionType: WaypointActionType) => void;
+  updateAction: (waypointId: string, actionId: string, params: ActionParams) => void;
   removeAction: (waypointId: string, actionId: string) => void;
 }
 
@@ -158,6 +179,8 @@ export const RouteBuilderProvider = ({
       selectWaypoint: (id) => dispatch({ type: 'selectWaypoint', id }),
       addAction: (waypointId, actionType) =>
         dispatch({ type: 'addAction', waypointId, actionType }),
+      updateAction: (waypointId, actionId, params) =>
+        dispatch({ type: 'updateAction', waypointId, actionId, params }),
       removeAction: (waypointId, actionId) =>
         dispatch({ type: 'removeAction', waypointId, actionId }),
     }),

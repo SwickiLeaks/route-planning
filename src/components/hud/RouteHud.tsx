@@ -21,6 +21,8 @@ interface RouteHudProps {
   route: BuilderRoute;
   calc: RouteCalculation;
   calculating?: boolean;
+  /** When true (map being flown), the HUD recedes to give the map priority. */
+  faded?: boolean;
 }
 
 /** A compact action indicator shown under a waypoint node. */
@@ -48,7 +50,7 @@ const Node = ({
 }) => {
   const actions = waypoint.actions ?? [];
   const active = actions.length > 0;
-  const accent = active ? colors.yellow : isEndpoint ? colors.gold : colors.brown;
+  const accent = active ? colors.accent : isEndpoint ? colors.gold : colors.brown;
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', flex: '0 0 auto', px: '2px' }}>
@@ -59,7 +61,7 @@ const Node = ({
           transform: 'rotate(45deg)',
           borderRadius: '2px',
           border: `2px solid ${accent}`,
-          bgcolor: active ? accent : 'rgba(17,17,16,0.9)',
+          bgcolor: active ? accent : 'rgba(17,18,20,0.9)',
           boxShadow: active ? `0 0 9px ${accent}77` : 'none',
         }}
       />
@@ -88,26 +90,35 @@ const Stat = ({ label, value, unit, color = colors.white }: { label: string; val
   </Box>
 );
 
-/** A leg card, flex-sized in proportion to the leg's distance. */
+/** A leg card. Grows to help fill the row (uniformly), wrapping as legs add. */
 const Segment = ({ leg }: { leg: LegCalc }) => (
   <Box
     sx={{
-      flexGrow: Math.max(leg.distanceNm, 1),
-      flexBasis: 0,
-      minWidth: 150,
+      flex: 1,
+      minWidth: 0,
       alignSelf: 'flex-start',
-      display: 'flex',
-      alignItems: 'stretch',
       borderRadius: '8px',
       overflow: 'hidden',
       bgcolor: 'rgba(255,255,255,0.05)',
       border: '1px solid rgba(255,255,255,0.08)',
     }}
   >
-    <Box sx={{ display: 'flex', alignItems: 'center', px: '8px', bgcolor: `${colors.yellow}14`, borderRight: `1px solid ${colors.yellow}40`, fontFamily: MONO, fontSize: 12, fontWeight: 700, color: colors.yellow }}>
-      L{leg.index + 1}
+    <Box
+      sx={{
+        px: '9px',
+        py: '3px',
+        fontFamily: MONO,
+        fontSize: 11,
+        fontWeight: 700,
+        letterSpacing: '0.06em',
+        color: colors.accent,
+        bgcolor: `${colors.accent}14`,
+        borderBottom: `1px solid ${colors.accent}40`,
+      }}
+    >
+      LEG {leg.index + 1}
     </Box>
-    <Box sx={{ flex: 1, display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', alignItems: 'center', px: '8px', py: '6px' }}>
+    <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', alignItems: 'baseline', px: '6px', py: '7px' }}>
       <Stat label="Time" value={fmtMinSec(leg.legTimeMin)} />
       <Stat label="Dist" value={fmtNm(leg.distanceNm)} unit="nm" />
       <Stat label="Fuel" value={fmtLb(leg.legFuelLb)} unit="lb" color={colors.gold} />
@@ -120,7 +131,7 @@ const Segment = ({ leg }: { leg: LegCalc }) => (
  * bar. Route metrics are individual tiles; the legs strip and fuel consumption
  * are their own panes. Together they read as a HUD layered over the map.
  */
-const RouteHud = ({ route, calc, calculating = false }: RouteHudProps) => {
+const RouteHud = ({ route, calc, calculating = false, faded = false }: RouteHudProps) => {
   const t = calc.totals;
   const stateColor = fuelStateColor(t.fuelState);
   const lastIndex = route.waypoints.length - 1;
@@ -137,13 +148,17 @@ const RouteHud = ({ route, calc, calculating = false }: RouteHudProps) => {
         position: 'absolute',
         bottom: 16,
         left: '50%',
-        transform: 'translateX(-50%)',
         zIndex: 3,
         width: 'min(1320px, calc(100vw - 24px))',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         gap: 1,
+        // Recede while the map is flown; revive gently, pass clicks through.
+        transform: `translateX(-50%) translateY(${faded ? 12 : 0}px)`,
+        opacity: faded ? 0.12 : 1,
+        pointerEvents: faded ? 'none' : 'auto',
+        transition: `opacity ${faded ? 150 : 450}ms ease, transform ${faded ? 150 : 450}ms ease`,
       }}
     >
       {/* Calculating flag floats above the cluster, undimmed. */}
@@ -159,29 +174,44 @@ const RouteHud = ({ route, calc, calculating = false }: RouteHudProps) => {
             borderRadius: '20px',
           }}
         >
-          <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: colors.yellow, animation: 'hud-pulse 0.9s ease-in-out infinite' }} />
-          <Box sx={{ fontSize: 10.5, letterSpacing: '0.06em', color: colors.yellow }}>CALCULATING</Box>
+          <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: colors.accent, animation: 'hud-pulse 0.9s ease-in-out infinite' }} />
+          <Box sx={{ fontSize: 10.5, letterSpacing: '0.06em', color: colors.accent }}>CALCULATING</Box>
         </Box>
       )}
 
       {/* Route metric tiles — individual panes. */}
       <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', justifyContent: 'center', ...dim }}>
         <MetricTile label="Distance" value={fmtNm(t.distanceNm)} unit="nm" />
-        <MetricTile label="Route Time" value={fmtHrMin(t.routeTimeMin)} unit="ete" accent={colors.yellow} />
+        <MetricTile label="Route Time" value={fmtHrMin(t.routeTimeMin)} unit="ete" accent={colors.accent} />
         <MetricTile label="Fuel Burn" value={fmtLb(t.routeFuelLb)} unit="lb" accent={colors.gold} />
         <MetricTile label="Remaining" value={fmtLb(t.remainingFuelLb)} unit="lb" accent={stateColor} />
         <MetricTile label="Avg Flow" value={fmtLb(t.avgFuelFlowLbHr)} unit="lb/hr" />
       </Box>
 
-      {/* Legs pane. */}
+      {/* Legs pane — leg cards grow to fill the width (no dead margins) and
+          wrap as the route grows. Each waypoint node stays paired with its
+          leg card; the final lone node doesn't stretch. */}
       <Box sx={{ ...glassPane, width: '100%', px: 1.5, py: 1.25, ...dim }}>
-        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: '6px', overflowX: 'auto' }}>
-          {route.waypoints.map((wp, i) => (
-            <Box key={wp.id} sx={{ display: 'contents' }}>
-              <Node waypoint={wp} index={i} isEndpoint={i === 0 || i === lastIndex} />
-              {calc.legs[i] && <Segment leg={calc.legs[i]} />}
-            </Box>
-          ))}
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '6px', rowGap: '10px' }}>
+          {route.waypoints.map((wp, i) => {
+            const hasLeg = Boolean(calc.legs[i]);
+            return (
+              <Box
+                key={wp.id}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '6px',
+                  // Leg pairs grow to fill the row; the trailing node stays snug.
+                  flex: hasLeg ? '1 1 240px' : '0 0 auto',
+                  minWidth: 0,
+                }}
+              >
+                <Node waypoint={wp} index={i} isEndpoint={i === 0 || i === lastIndex} />
+                {hasLeg && <Segment leg={calc.legs[i]} />}
+              </Box>
+            );
+          })}
         </Box>
       </Box>
 

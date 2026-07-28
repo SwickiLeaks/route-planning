@@ -43,10 +43,10 @@ export const theme = createTheme({
       primary: colors.white,
       secondary: colors.brown,
     },
-    primary: { main: colors.gold, contrastText: colors.black },
+    primary: { main: colors.accent, contrastText: colors.black },
     secondary: { main: colors.brown, contrastText: colors.black },
     success: { main: colors.olive, contrastText: colors.black },
-    warning: { main: colors.yellow, contrastText: colors.black },
+    warning: { main: colors.gold, contrastText: colors.black },
     error: { main: colors.red, contrastText: colors.white },
     maroon: derive.palette.augmentColor({
       color: { main: colors.maroon, contrastText: colors.white },

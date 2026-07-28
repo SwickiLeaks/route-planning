@@ -15,7 +15,12 @@ interface WaypointMarkerProps {
   onSelect: () => void;
 }
 
-/** A waypoint marker: a diamond node plus a readable data chip beside it. */
+/**
+ * A waypoint marker rendered as two markers: a center-anchored diamond that
+ * sits on the point, and a corner-anchored data chip. The chip is a separate
+ * corner-anchored marker (no translate(-50%)) so its text never lands on a
+ * half-pixel — that keeps it sharp, including when selected.
+ */
 const WaypointMarker = ({
   waypoint,
   index,
@@ -24,69 +29,65 @@ const WaypointMarker = ({
   selected,
   onSelect,
 }: WaypointMarkerProps) => {
-  const accent = selected ? colors.yellow : isEndpoint ? colors.gold : colors.brown;
-  // Even sizes keep the center-anchored marker (and its chip) on whole pixels,
-  // so the chip text stays sharp.
+  const accent = selected ? colors.accent : isEndpoint ? colors.gold : colors.brown;
   const diamond = selected ? 18 : 14;
   const actions = waypoint.actions ?? [];
+  const lng = waypoint.position.lng;
+  const lat = waypoint.position.lat;
+
+  const select = (e: { originalEvent: { stopPropagation: () => void } }) => {
+    e.originalEvent.stopPropagation();
+    onSelect();
+  };
 
   return (
-    <Marker
-      longitude={waypoint.position.lng}
-      latitude={waypoint.position.lat}
-      anchor="center"
-      onClick={(e) => {
-        e.originalEvent.stopPropagation();
-        onSelect();
-      }}
-    >
-      <Box sx={{ position: 'relative', cursor: 'pointer' }}>
-        {selected && (
+    <>
+      {/* Diamond, centered on the point. */}
+      <Marker longitude={lng} latitude={lat} anchor="center" onClick={select}>
+        <Box sx={{ position: 'relative', cursor: 'pointer', width: diamond, height: diamond }}>
+          {selected && (
+            <Box
+              sx={{
+                position: 'absolute',
+                inset: 0,
+                m: 'auto',
+                width: diamond + 12,
+                height: diamond + 12,
+                transform: 'rotate(45deg)',
+                border: `1px solid ${colors.accent}66`,
+                borderRadius: '3px',
+              }}
+            />
+          )}
+          <Box
+            sx={{
+              width: diamond,
+              height: diamond,
+              transform: 'rotate(45deg)',
+              borderRadius: '3px',
+              border: `2.5px solid ${accent}`,
+              bgcolor: selected ? `${colors.accent}33` : 'rgba(18,20,23,0.85)',
+              boxShadow: glow(accent),
+            }}
+          />
           <Box
             sx={{
               position: 'absolute',
               inset: 0,
               m: 'auto',
-              width: diamond + 12,
-              height: diamond + 12,
-              transform: 'rotate(45deg)',
-              border: `1px solid ${colors.yellow}66`,
-              borderRadius: '3px',
+              width: 4,
+              height: 4,
+              borderRadius: '50%',
+              bgcolor: accent,
             }}
           />
-        )}
+        </Box>
+      </Marker>
 
-        {/* Node diamond. */}
+      {/* Data chip — corner-anchored (sharp), up and right of the diamond. */}
+      <Marker longitude={lng} latitude={lat} anchor="bottom-left" offset={[10, -9]} onClick={select}>
         <Box
           sx={{
-            width: diamond,
-            height: diamond,
-            transform: 'rotate(45deg)',
-            borderRadius: '3px',
-            border: `2.5px solid ${accent}`,
-            bgcolor: selected ? `${colors.yellow}33` : 'rgba(17,17,16,0.85)',
-            boxShadow: glow(accent),
-          }}
-        />
-        <Box
-          sx={{
-            position: 'absolute',
-            inset: 0,
-            m: 'auto',
-            width: 4,
-            height: 4,
-            borderRadius: '50%',
-            bgcolor: accent,
-          }}
-        />
-
-        {/* Data chip — itself clickable, so you can select from the label
-            rather than the small diamond. Highlights to mirror the builder. */}
-        <Box
-          sx={{
-            position: 'absolute',
-            left: diamond / 2 + 10,
-            bottom: diamond / 2 + 4,
             cursor: 'pointer',
             display: 'flex',
             flexDirection: 'column',
@@ -96,12 +97,12 @@ const WaypointMarker = ({
             py: '6px',
             borderRadius: '9px',
             boxShadow: selected
-              ? `0 4px 18px rgba(0,0,0,0.55), 0 0 0 1px ${colors.yellow}`
+              ? `0 4px 18px rgba(0,0,0,0.55), 0 0 0 1px ${colors.accent}`
               : '0 4px 16px rgba(0,0,0,0.55)',
-            bgcolor: selected ? 'rgba(38,34,16,0.92)' : 'rgba(17,17,16,0.9)',
-            border: selected ? `1px solid ${colors.yellow}` : PANEL_BORDER,
+            bgcolor: selected ? 'rgba(22,27,18,0.92)' : 'rgba(18,20,23,0.9)',
+            border: selected ? `1px solid ${colors.accent}` : PANEL_BORDER,
             transition: 'border-color 120ms, background-color 120ms',
-            '&:hover': { borderColor: selected ? colors.yellow : `${colors.yellow}88` },
+            '&:hover': { borderColor: selected ? colors.accent : `${colors.accent}88` },
           }}
         >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
@@ -119,9 +120,7 @@ const WaypointMarker = ({
             >
               {String(index + 1).padStart(2, '0')}
             </Box>
-            <Box sx={{ fontSize: 14, fontWeight: 500, color: colors.white }}>
-              {waypoint.name}
-            </Box>
+            <Box sx={{ fontSize: 14, fontWeight: 500, color: colors.white }}>{waypoint.name}</Box>
           </Box>
 
           <Box sx={{ display: 'flex', gap: '10px', fontSize: 12, color: MUTED }}>
@@ -137,8 +136,8 @@ const WaypointMarker = ({
             </Box>
           )}
         </Box>
-      </Box>
-    </Marker>
+      </Marker>
+    </>
   );
 };
 

@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useMsnHandshake } from "@/api/hooks";
 import ControlBar from "@/components/ControlBar";
 import MapView from "@/components/MapView";
@@ -12,6 +12,9 @@ import type { BuilderRoute } from "@/route/routeBuilderTypes";
 const DashboardContent = () => {
   const { route, selectWaypoint } = useRouteBuilder();
   const calc = useRouteCalculation(route);
+  // While the map is being flown, panes recede so it takes priority. Purely
+  // visual — pane state is untouched, so in-progress work is never lost.
+  const [mapInteracting, setMapInteracting] = useState(false);
 
   return (
     // The map owns the whole viewport; controls float over it as overlays.
@@ -22,10 +25,16 @@ const DashboardContent = () => {
         calc={calc.data}
         calculating={calc.isCalculating}
         onBackgroundClick={() => selectWaypoint(null)}
+        onInteractionChange={setMapInteracting}
       />
-      <ControlBar />
+      <ControlBar faded={mapInteracting} />
       {calc.data && (
-        <RouteHud route={route} calc={calc.data} calculating={calc.isCalculating} />
+        <RouteHud
+          route={route}
+          calc={calc.data}
+          calculating={calc.isCalculating}
+          faded={mapInteracting}
+        />
       )}
     </main>
   );

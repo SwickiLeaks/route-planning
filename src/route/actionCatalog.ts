@@ -20,7 +20,7 @@ export interface ActionDef {
 }
 
 export const ACTION_CATALOG: ActionDef[] = [
-  { type: 'hover', label: 'Hover', short: 'HOV', color: colors.yellow, Icon: FlightIcon },
+  { type: 'hover', label: 'Hover', short: 'HOV', color: colors.accent, Icon: FlightIcon },
 ];
 
 const byType = new Map(ACTION_CATALOG.map((def) => [def.type, def]));

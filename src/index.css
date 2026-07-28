@@ -9,11 +9,11 @@
   /* Fallbacks for the first paint before React mounts. The authoritative
      values live in src/theme/tokens.ts and are re-injected at runtime by
      CssBaseline — keep these visually close, but don't hand-tune here. */
-  --bg: #0d0d0d;
-  --panel: #141412;
-  --panel-overlay: rgba(13, 13, 13, 0.85);
-  --border: #2a2822;
-  --fg: #faf9f7;
+  --bg: #0d0e0f;
+  --panel: #16171a;
+  --panel-overlay: rgba(11, 12, 13, 0.9);
+  --border: #2b2d31;
+  --fg: #e6e6e1;
 }
 
 * {

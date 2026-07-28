@@ -29,7 +29,7 @@ const ArcGauge = ({
   max,
   label,
   unit,
-  accent = colors.yellow,
+  accent = colors.accent,
   size = 72,
 }: ArcGaugeProps) => {
   const cx = size / 2;

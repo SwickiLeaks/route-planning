@@ -15,12 +15,12 @@ export const MONO =
 /** Soft dark shadow for text sitting directly over the map — legible, no bloom. */
 export const TEXT_SHADOW = '0 1px 3px rgba(0,0,0,0.9)';
 
-/** Muted / faint label inks on dark. */
-export const MUTED = 'rgba(250,249,247,0.62)';
-export const FAINT = 'rgba(250,249,247,0.42)';
+/** Muted / faint label inks on dark (neutral bone). */
+export const MUTED = 'rgba(230,230,224,0.6)';
+export const FAINT = 'rgba(230,230,224,0.4)';
 
-/** Calm dark surface for panels and map chips. */
-export const PANEL_BG = 'rgba(17,17,16,0.9)';
+/** Calm neutral-charcoal surface for panels and map chips. */
+export const PANEL_BG = 'rgba(18,19,21,0.9)';
 export const PANEL_BORDER = '1px solid rgba(255,255,255,0.09)';
 
 /**
@@ -28,7 +28,7 @@ export const PANEL_BORDER = '1px solid rgba(255,255,255,0.09)';
  * map. More transparent than PANEL_BG, leaning on blur for legibility.
  */
 export const glassPane = {
-  bgcolor: 'rgba(14,14,13,0.46)',
+  bgcolor: 'rgba(13,14,15,0.5)',
   backdropFilter: 'blur(18px)',
   border: '1px solid rgba(255,255,255,0.08)',
   borderRadius: '12px',
@@ -36,11 +36,11 @@ export const glassPane = {
 } as const;
 
 /** A gentle surface glow for markers (never text) — subtle, doesn't bloom. */
-export const glow = (color: string = colors.yellow) => `0 0 10px ${color}44`;
+export const glow = (color: string = colors.accent) => `0 0 10px ${color}44`;
 
 /** Fuel state → accent color. */
 export const fuelStateColor = (state: FuelState): string =>
-  state === 'critical' ? colors.red : state === 'caution' ? colors.gold : colors.yellow;
+  state === 'critical' ? colors.red : state === 'caution' ? colors.gold : colors.accent;
 
 /* ── Formatters ───────────────────────────────────────────────────────── */
 
@@ -65,7 +65,7 @@ export const fmtNm = (nm: number): string => nm.toFixed(1);
  */
 export const HudFrame = ({
   children,
-  accent = colors.yellow,
+  accent = colors.accent,
   sx,
 }: {
   children: ReactNode;

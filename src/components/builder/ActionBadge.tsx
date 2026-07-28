@@ -26,7 +26,7 @@ const ActionBadge = ({ type, onMap = false }: ActionBadgeProps) => {
         letterSpacing: '0.06em',
         fontWeight: 600,
         color: def.color,
-        bgcolor: onMap ? 'rgba(17,17,16,0.92)' : `${def.color}1f`,
+        bgcolor: onMap ? 'rgba(17,18,20,0.92)' : `${def.color}1f`,
         border: `1px solid ${def.color}${onMap ? '99' : '66'}`,
         whiteSpace: 'nowrap',
       }}

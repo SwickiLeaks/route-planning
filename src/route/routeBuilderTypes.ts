@@ -8,15 +8,21 @@ import type { Route, Waypoint } from '@/types/proto';
  */
 export type WaypointActionType = 'hover';
 
+/** Parameters for a placed action (fields used depend on the action type). */
+export interface ActionParams {
+  /** Hover: seconds to hold. */
+  durationSec?: number;
+  /** Hover: altitude to hold at, ft MSL. */
+  altitudeFt?: number;
+  /** Orbit: radius, nm. */
+  radiusNm?: number;
+}
+
 /** An action instance placed on a waypoint. */
 export interface WaypointAction {
   id: string;
   type: WaypointActionType;
-  /** Per-action parameters, filled in as action editors are built. */
-  params?: {
-    durationSec?: number;
-    radiusNm?: number;
-  };
+  params?: ActionParams;
 }
 
 /** The proto Waypoint plus editor-only actions. Assignable to Waypoint. */

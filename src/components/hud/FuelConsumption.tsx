@@ -54,7 +54,7 @@ const FuelConsumption = ({ calc }: { calc: RouteCalculation }) => {
         }}
       >
         {legs.map((leg, i) => {
-          const color = lerpHex(colors.yellow, colors.gold, legs.length > 1 ? i / (legs.length - 1) : 0);
+          const color = lerpHex(colors.accent, colors.gold, legs.length > 1 ? i / (legs.length - 1) : 0);
           const width = (leg.legFuelLb / capacity) * 100;
           return (
             <Box
