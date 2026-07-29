@@ -3,7 +3,7 @@ import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
 import RouteIcon from '@mui/icons-material/Route';
 import AddLocationAltIcon from '@mui/icons-material/AddLocationAlt';
 import RouteManagerPane from '@/components/builder/RouteManagerPane';
-import RouteBuilderPanel from '@/components/builder/RouteBuilderPanel';
+import RouteComposer from '@/components/builder/RouteComposer';
 import WaypointCreatorPane from '@/components/builder/WaypointCreatorPane';
 
 export type PaneDock = 'top' | 'left';
@@ -29,7 +29,7 @@ export const TOP_PANES: TopPane[] = [
     label: 'Route Builder',
     icon: <RouteIcon fontSize="small" />,
     dock: 'top',
-    content: <RouteBuilderPanel />,
+    content: <RouteComposer />,
   },
   {
     id: 'create',

@@ -86,7 +86,13 @@ const MapView = ({
         touchZoomRotate={false}
         onError={handleError}
         cursor={placing ? 'crosshair' : undefined}
-        onClick={(e) => onMapClick?.({ lng: e.lngLat.lng, lat: e.lngLat.lat })}
+        onClick={(e) => {
+          // Only real map-canvas clicks count as background clicks. Clicks on a
+          // marker/chip target their own DOM (which may even unmount mid-click,
+          // so a closest('.maplibregl-marker') test is unreliable) — ignore them.
+          if (!(e.originalEvent?.target instanceof HTMLCanvasElement)) return;
+          onMapClick?.({ lng: e.lngLat.lng, lat: e.lngLat.lat });
+        }}
         onMoveStart={(e) => {
           if (!e.originalEvent) return;
           if (restoreTimer.current) clearTimeout(restoreTimer.current);
