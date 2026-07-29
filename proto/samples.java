@@ -17,6 +17,33 @@ import umi.interfaces.IRouteModel;
 import umirpc.interfaces.IMsnSvrClient;
 import umirpc.requests.AttributeRequestHelper;
 
+public enum ModelType
+{
+    Unknown (0),
+    Mission (1),
+    Route (2),
+    Segment (3),
+    RoutePoint (4),
+    Point (5),
+    CalculatedPoint (6),
+    Vehicle (7),
+    EventCollection (8),
+    Event (9),
+    DisconnectedCollection(10),
+    PointGroup (11),
+    TrackPoint (12),
+    PointGroupCollection (13),
+    TrackPointCollection (14),
+    MissionList (15),
+    CalculatedPointCollection (16);
+
+    private final int modelCode;
+
+    ModelType(int levelCode) {
+        this.modelCode = levelCode;
+    }
+}
+
 public class Samples {
     private static final Logger logger = Logger.getLogger("CPMS UMI Samples");
     static int _timeout = 5000;
