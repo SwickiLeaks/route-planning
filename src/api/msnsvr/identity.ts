@@ -1,5 +1,6 @@
 import type { MessageInitShape } from '@bufbuild/protobuf';
 import { CallIdSchema } from '@/api/gen/MsnSvr_pb';
+import { ModelType } from '@/api/msnsvr/missionClient';
 
 /**
  * MsnSvr client identity and tree addressing.
@@ -15,18 +16,12 @@ export const CLIENT_ID = 'route-planning-demo';
 export const MISSION_ID = 'demo-mission-1';
 export const PROTOCOL_VERSION = '1.0';
 
-/**
- * Node type codes for the int32 `type` on IdType/ChildId. The server defines
- * these; they are NOT in the proto.
- *
- * TODO: replace the placeholders with the real service constants before the
- * create-route / create-segment flow will work.
- */
+/** Node type codes for the int32 `type` on IdType/ChildId (see ModelType). */
 export const NodeType = {
-  Mission: 0,
-  Route: 0,
-  Segment: 0,
-  RoutePoint: 0,
+  Mission: ModelType.Mission,
+  Route: ModelType.Route,
+  Segment: ModelType.Segment,
+  RoutePoint: ModelType.RoutePoint,
 } as const;
 
 /** A single step in a tree path: a typed node id. */

@@ -12,6 +12,7 @@ export {
   useAddChild,
   useRemoveChild,
 } from '@/api/hooks/useMissionTree';
+export { useMissionSession, type MissionSession } from '@/api/hooks/useMissionSession';
 
 // PoiSearcher
 export {

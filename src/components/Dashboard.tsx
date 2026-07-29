@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useMsnHandshake } from "@/api/hooks";
+import { useMissionSession, useMsnHandshake } from "@/api/hooks";
 import ControlBar from "@/components/controls/ControlBar";
 import MapView from "@/components/map/MapView";
 import RouteHud from "@/components/hud/RouteHud";
@@ -45,6 +45,9 @@ const Dashboard = () => {
   const { data: routes } = useRoutes();
   const handshakeResult = useMsnHandshake();
   console.log(handshakeResult.data);
+
+  // Create the demo's mission + route on startup (see samples.java flow).
+  useMissionSession();
 
   const seed = useMemo<BuilderRoute | null>(() => {
     const first = routes[0];
