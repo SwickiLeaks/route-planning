@@ -1,13 +1,13 @@
-import { createClient, type Client, type Transport } from '@connectrpc/connect';
-import type { MessageInitShape } from '@bufbuild/protobuf';
 import {
   MsnSvr,
   type AttributeInfoList,
+  type AttributeRequestSchema,
   type CallIdSchema,
   type ParentIdSchema,
-  type AttributeRequestSchema,
-} from '@/api/gen/MsnSvr_pb';
-import { transport as defaultTransport } from '@/api/transport';
+} from "@/api/gen/MsnSvr_pb";
+import { transport as defaultTransport } from "@/api/transport";
+import type { MessageInitShape } from "@bufbuild/protobuf";
+import { createClient, type Client, type Transport } from "@connectrpc/connect";
 
 // Model-type codes for IdType/ChildId `type` (ModelType ordinals in the service).
 export const ModelType = {
@@ -31,13 +31,18 @@ export const ModelType = {
 } as const;
 
 // TransactionRequest.request_type codes (TransactionAction ordinals).
-export const TransactionAction = { Start: 0, Commit: 1, Rollback: 2 } as const;
+export const TransactionAction = {
+  Metadata: 0,
+  Start: 1,
+  Commit: 2,
+  Rollback: 3,
+} as const;
 
 // SegmentCalcState values. "Calculating" is the only one the sample confirms;
 // confirm the rest against the service's CalculationStatus enum.
 export const CalculationStatus = {
-  Calculating: 'Calculating',
-  Calculated: 'Calculated',
+  Calculating: "Calculating",
+  Calculated: "Calculated",
 } as const;
 
 export interface WaitOptions {
@@ -53,23 +58,28 @@ export interface WaitOptions {
 
 // Known point attributes: the `id` and CLR `type` the server expects.
 export const PointAttribute = {
-  Altitude: { id: 'PlanAltitudeValue', type: 'MP.Core.Weather.InputAltitude' },
-  Speed: { id: 'AirspeedValue', type: 'MP.Vehicle.InputSpeed' },
-  Coordinate: { id: 'Coordinate', type: 'MP.Core.Navigation.Coordinate' },
+  Altitude: { id: "PlanAltitudeValue", type: "MP.Core.Weather.InputAltitude" },
+  Speed: { id: "AirspeedValue", type: "MP.Vehicle.InputSpeed" },
+  Coordinate: { id: "Coordinate", type: "MP.Core.Navigation.Coordinate" },
 } as const;
 
-const CLIENT_ID = 'route-planning-demo';
-const PROTOCOL_VERSION = '1.0';
+const CLIENT_ID = "route-planning-demo";
+const PROTOCOL_VERSION = "1.0";
 const DEFAULT_TIMEOUT_MS = 5000;
 
 // The CLR assembly an attribute type belongs to, keyed by its namespace prefix.
 const assemblyNameFor = (attributeType: string): string => {
-  if (attributeType.startsWith('MP.Core.')) return 'MP.Core4, Version=4.0.0.0, Culture=neutral, PublicKeyToken=null';
-  if (attributeType.startsWith('System.')) return 'netstandard, Version=2.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51';
-  if (attributeType.startsWith('MP.Vehicle.')) return 'MP.Vehicle.Interfaces4, Version=4.0.0.0, Culture=neutral, PublicKeyToken=null';
-  if (attributeType.startsWith('MP.Mission.Data.')) return 'MP.Mission.Data.Core7, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null';
-  if (attributeType.startsWith('MP.Geometry.')) return 'MP.Geometry3, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null';
-  return '';
+  if (attributeType.startsWith("MP.Core."))
+    return "MP.Core4, Version=4.0.0.0, Culture=neutral, PublicKeyToken=null";
+  if (attributeType.startsWith("System."))
+    return "netstandard, Version=2.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51";
+  if (attributeType.startsWith("MP.Vehicle."))
+    return "MP.Vehicle.Interfaces4, Version=4.0.0.0, Culture=neutral, PublicKeyToken=null";
+  if (attributeType.startsWith("MP.Mission.Data."))
+    return "MP.Mission.Data.Core7, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null";
+  if (attributeType.startsWith("MP.Geometry."))
+    return "MP.Geometry3, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null";
+  return "";
 };
 
 // TODO: the reference client runs values through a CrossPlatformSerializer
@@ -85,30 +95,41 @@ type AttributeRequestInit = MessageInitShape<typeof AttributeRequestSchema>;
 export class MissionClient {
   private readonly client: Client<typeof MsnSvr>;
   private readonly timeoutMs: number;
-  private transactionId = '';
-  private activeMissionId = '';
-  currentMissionId = '';
-  currentRouteId = '';
-  currentSegmentId = '';
+  private transactionId = "";
+  private activeMissionId = "";
+  currentMissionId = "";
+  currentRouteId = "";
+  currentSegmentId = "";
 
-  constructor(transport: Transport = defaultTransport, timeoutMs = DEFAULT_TIMEOUT_MS) {
+  constructor(
+    transport: Transport = defaultTransport,
+    timeoutMs = DEFAULT_TIMEOUT_MS,
+  ) {
     this.client = createClient(MsnSvr, transport);
     this.timeoutMs = timeoutMs;
   }
 
   // Connectivity check; returns the server's reported State.
-  async handshake(appId = 'handshake'): Promise<string> {
+  async handshake(appId = "handshake"): Promise<string> {
     const res = await this.client.handshake({ id: appId });
     return res.state;
   }
 
   // The caller envelope carried on every request; context tags the call.
-  private callId(context = ''): CallIdInit {
-    return { version: PROTOCOL_VERSION, clientId: CLIENT_ID, transactionId: this.transactionId, context };
+  private callId(context = ""): CallIdInit {
+    return {
+      version: PROTOCOL_VERSION,
+      clientId: CLIENT_ID,
+      transactionId: this.transactionId,
+      context,
+    };
   }
 
   // Opens a transaction and adopts the server-issued transaction id.
-  async startTransaction(missionId: string, description: string): Promise<void> {
+  async startTransaction(
+    missionId: string,
+    description: string,
+  ): Promise<void> {
     const res = await this.client.transactionData({
       caller: this.callId(),
       missionId,
@@ -116,8 +137,9 @@ export class MissionClient {
       requestType: TransactionAction.Start,
       timeoutMill: this.timeoutMs,
     });
+    console.log("StartTransaction Response: ", res);
     this.activeMissionId = missionId;
-    this.transactionId = res.caller?.transactionId ?? '';
+    this.transactionId = res.caller?.transactionId ?? "";
   }
 
   // Closes the active transaction and clears the transaction id.
@@ -125,22 +147,22 @@ export class MissionClient {
     await this.client.transactionData({
       caller: this.callId(),
       missionId: this.activeMissionId,
-      name: '',
+      name: "",
       requestType: TransactionAction.Start,
       timeoutMill: this.timeoutMs,
     });
-    this.activeMissionId = '';
-    this.transactionId = '';
+    this.activeMissionId = "";
+    this.transactionId = "";
   }
 
   // Creates the mission at the tree root; returns its id.
   async addMission(): Promise<string> {
-    await this.startTransaction('', 'Add mission');
+    await this.startTransaction("", "Add mission");
     try {
       const res = await this.client.addChild({
         client: this.callId(),
         parent: this.parentIdForMissions(),
-        child: { type: ModelType.Mission, id: '', index: 0 },
+        child: { type: ModelType.Mission, id: "", index: 0 },
       });
       this.currentMissionId = res.id;
       return this.currentMissionId;
@@ -151,12 +173,12 @@ export class MissionClient {
 
   // Creates a route under the mission and resolves its default segment id.
   async addRoute(missionId: string): Promise<string> {
-    await this.startTransaction('', 'Add route');
+    await this.startTransaction("", "Add route");
     try {
       const res = await this.client.addChild({
         client: this.callId(),
         parent: this.missionAsParentId(missionId),
-        child: { type: ModelType.Route, id: '', index: 0 },
+        child: { type: ModelType.Route, id: "", index: 0 },
       });
       this.currentRouteId = res.id;
     } finally {
@@ -190,12 +212,12 @@ export class MissionClient {
 
   // Inserts a route point at `index`; returns the new point id.
   async insertPointToCurrentRoute(index: number): Promise<string> {
-    await this.startTransaction('', 'Add route point');
+    await this.startTransaction("", "Add route point");
     try {
       const res = await this.client.addChild({
         client: this.callId(),
         parent: this.segmentAsParentId(),
-        child: { type: ModelType.RoutePoint, id: '', index },
+        child: { type: ModelType.RoutePoint, id: "", index },
       });
       return res.id;
     } finally {
@@ -204,11 +226,21 @@ export class MissionClient {
   }
 
   // Sets one attribute on a route point, inside a transaction.
-  async setPointAttribute(pointId: string, attributeId: string, attributeType: string, attributeValue: string | null): Promise<void> {
-    await this.startTransaction('', `Set point ${attributeId}`);
+  async setPointAttribute(
+    pointId: string,
+    attributeId: string,
+    attributeType: string,
+    attributeValue: string | null,
+  ): Promise<void> {
+    await this.startTransaction("", `Set point ${attributeId}`);
     try {
       await this.client.setAttributes(
-        this.attributeRequest(this.pointId(pointId), attributeId, attributeType, attributeValue),
+        this.attributeRequest(
+          this.pointId(pointId),
+          attributeId,
+          attributeType,
+          attributeValue,
+        ),
       );
     } finally {
       await this.endTransaction();
@@ -217,21 +249,39 @@ export class MissionClient {
 
   // e.g. "500 A" for AGL, "5000 M" for MSL.
   setPointAltitude(pointId: string, altitude: string): Promise<void> {
-    return this.setPointAttribute(pointId, PointAttribute.Altitude.id, PointAttribute.Altitude.type, altitude);
+    return this.setPointAttribute(
+      pointId,
+      PointAttribute.Altitude.id,
+      PointAttribute.Altitude.type,
+      altitude,
+    );
   }
 
   // e.g. "100 T" for true airspeed, "110 C" for calibrated.
   setPointSpeed(pointId: string, speed: string): Promise<void> {
-    return this.setPointAttribute(pointId, PointAttribute.Speed.id, PointAttribute.Speed.type, speed);
+    return this.setPointAttribute(
+      pointId,
+      PointAttribute.Speed.id,
+      PointAttribute.Speed.type,
+      speed,
+    );
   }
 
   // e.g. "N 33 10.00/W 95 30.00".
   setPointCoordinate(pointId: string, coordinate: string): Promise<void> {
-    return this.setPointAttribute(pointId, PointAttribute.Coordinate.id, PointAttribute.Coordinate.type, coordinate);
+    return this.setPointAttribute(
+      pointId,
+      PointAttribute.Coordinate.id,
+      PointAttribute.Coordinate.type,
+      coordinate,
+    );
   }
 
   // Convenience bootstrap: create the demo's single mission and route.
-  async createMissionAndRoute(): Promise<{ missionId: string; routeId: string }> {
+  async createMissionAndRoute(): Promise<{
+    missionId: string;
+    routeId: string;
+  }> {
     const missionId = await this.addMission();
     const routeId = await this.addRoute(missionId);
     return { missionId, routeId };
@@ -240,33 +290,38 @@ export class MissionClient {
   // Triggers a route calculation unless one is already running.
   async beginCalculation(): Promise<void> {
     const status = await this.getSegmentCalculationState();
-    if (status === 'Calculating') return;
+    if (status === "Calculating") return;
     // Empty description on purpose — a named transaction becomes undoable, and
     // calculations cannot be undone. The server owns ending this transaction.
-    await this.startTransaction(this.currentMissionId, '');
+    await this.startTransaction(this.currentMissionId, "");
     await this.client.doAction({
-      client: this.callId('Calculate'),
+      client: this.callId("Calculate"),
       parent: this.missionAsParentId(this.currentMissionId),
     });
   }
 
   getSegmentCalculationState(): Promise<string> {
-    return this.getSegmentAttribute('SegmentCalcState');
+    return this.getSegmentAttribute("SegmentCalcState");
   }
 
   // Polls SegmentCalcState until it settles; resolves with the final status.
   // Throws on timeout or abort.
   async waitForCalculation(options: WaitOptions = {}): Promise<string> {
     const { intervalMs = 500, timeoutMs = 30_000, signal } = options;
-    const isComplete = options.isComplete ?? ((s) => s !== '' && s !== CalculationStatus.Calculating);
+    const isComplete =
+      options.isComplete ??
+      ((s) => s !== "" && s !== CalculationStatus.Calculating);
     const startedAt = Date.now();
 
     for (;;) {
-      if (signal?.aborted) throw signal.reason ?? new Error('Calculation wait aborted');
+      if (signal?.aborted)
+        throw signal.reason ?? new Error("Calculation wait aborted");
       const status = await this.getSegmentCalculationState();
       if (isComplete(status)) return status;
       if (Date.now() - startedAt > timeoutMs) {
-        throw new Error(`Calculation timed out after ${timeoutMs}ms (last status: "${status}")`);
+        throw new Error(
+          `Calculation timed out after ${timeoutMs}ms (last status: "${status}")`,
+        );
       }
       await delay(intervalMs, signal);
     }
@@ -279,33 +334,63 @@ export class MissionClient {
   }
 
   // Reads a single attribute value from a route point.
-  async getPointAttribute(pointId: string, attributeId: string): Promise<string> {
-    const res = await this.client.getAttributes(this.attributeRequest(this.pointId(pointId), attributeId, '', ''));
-    return readAttribute(res, attributeId);
-  }
-
-  async getCalcPointAttribute(pointId: string, calcPointId: string, attributeId: string): Promise<string> {
+  async getPointAttribute(
+    pointId: string,
+    attributeId: string,
+  ): Promise<string> {
     const res = await this.client.getAttributes(
-      this.attributeRequest(this.calculatedPointId(pointId, calcPointId), attributeId, '', ''),
+      this.attributeRequest(this.pointId(pointId), attributeId, "", ""),
     );
     return readAttribute(res, attributeId);
   }
 
-  async getEventAttribute(pointId: string, eventId: string, attributeId: string): Promise<string> {
+  async getCalcPointAttribute(
+    pointId: string,
+    calcPointId: string,
+    attributeId: string,
+  ): Promise<string> {
     const res = await this.client.getAttributes(
-      this.attributeRequest(this.eventId(pointId, eventId), attributeId, '', ''),
+      this.attributeRequest(
+        this.calculatedPointId(pointId, calcPointId),
+        attributeId,
+        "",
+        "",
+      ),
+    );
+    return readAttribute(res, attributeId);
+  }
+
+  async getEventAttribute(
+    pointId: string,
+    eventId: string,
+    attributeId: string,
+  ): Promise<string> {
+    const res = await this.client.getAttributes(
+      this.attributeRequest(
+        this.eventId(pointId, eventId),
+        attributeId,
+        "",
+        "",
+      ),
     );
     return readAttribute(res, attributeId);
   }
 
   async getSegmentAttribute(attributeId: string): Promise<string> {
-    const res = await this.client.getAttributes(this.attributeRequest(this.segmentAsParentId(), attributeId, '', ''));
+    const res = await this.client.getAttributes(
+      this.attributeRequest(this.segmentAsParentId(), attributeId, "", ""),
+    );
     return readAttribute(res, attributeId);
   }
 
   async getRouteAttribute(attributeId: string): Promise<string> {
     const res = await this.client.getAttributes(
-      this.attributeRequest(this.routeAsParentId(this.currentMissionId, this.currentRouteId), attributeId, '', ''),
+      this.attributeRequest(
+        this.routeAsParentId(this.currentMissionId, this.currentRouteId),
+        attributeId,
+        "",
+        "",
+      ),
     );
     return readAttribute(res, attributeId);
   }
@@ -321,7 +406,7 @@ export class MissionClient {
       parent: this.calculatedPointCollectionId(pointId),
       child: { type: ModelType.CalculatedPoint },
     });
-    return res.objects[res.objects.length - 1]?.id ?? '';
+    return res.objects[res.objects.length - 1]?.id ?? "";
   }
 
   // The first event (which holds the data) for a route point.
@@ -331,23 +416,31 @@ export class MissionClient {
       parent: this.eventCollectionId(pointId),
       child: { type: ModelType.Event },
     });
-    return res.objects[0]?.id ?? '';
+    return res.objects[0]?.id ?? "";
   }
 
   // Every attribute id available on a point (from the "AllAtts" action).
   async getAllAttributes(pointId: string): Promise<string[]> {
-    const res = await this.client.doAction({ client: this.callId('AllAtts'), parent: this.pointId(pointId) });
-    const attList = res.attributes.find((a) => a.name === 'AttList');
-    return attList ? attList.value.split(';').filter(Boolean) : [];
+    const res = await this.client.doAction({
+      client: this.callId("AllAtts"),
+      parent: this.pointId(pointId),
+    });
+    const attList = res.attributes.find((a) => a.name === "AttList");
+    return attList ? attList.value.split(";").filter(Boolean) : [];
   }
 
   // ── Request + path builders ──────────────────────────────────────────────
 
   // Builds an AttributeRequest; a null value marks the attribute as cleared.
-  private attributeRequest(parent: ParentIdInit, attributeId: string, attributeType: string, value: string | null): AttributeRequestInit {
+  private attributeRequest(
+    parent: ParentIdInit,
+    attributeId: string,
+    attributeType: string,
+    value: string | null,
+  ): AttributeRequestInit {
     const attribute =
       value === null
-        ? { name: attributeId, isNull: true, value: '' }
+        ? { name: attributeId, isNull: true, value: "" }
         : {
             name: attributeId,
             typeName: attributeType,
@@ -406,7 +499,10 @@ export class MissionClient {
     };
   }
 
-  private calculatedPointId(pointId: string, calcPointId: string): ParentIdInit {
+  private calculatedPointId(
+    pointId: string,
+    calcPointId: string,
+  ): ParentIdInit {
     return {
       ids: [
         ...this.calculatedPointCollectionId(pointId).ids!,
@@ -428,28 +524,31 @@ export class MissionClient {
 
   private eventId(pointId: string, eventId: string): ParentIdInit {
     return {
-      ids: [...this.eventCollectionId(pointId).ids!, { type: ModelType.Event, id: eventId }],
+      ids: [
+        ...this.eventCollectionId(pointId).ids!,
+        { type: ModelType.Event, id: eventId },
+      ],
     };
   }
 }
 
 // Pulls the value for `attributeId` out of an AttributeInfoList response.
 const readAttribute = (list: AttributeInfoList, attributeId: string): string =>
-  list.attributes.find((a) => a.name === attributeId)?.value ?? '';
+  list.attributes.find((a) => a.name === attributeId)?.value ?? "";
 
 // A promise that resolves after `ms`, or rejects if `signal` aborts first.
 const delay = (ms: number, signal?: AbortSignal): Promise<void> =>
   new Promise((resolve, reject) => {
     if (signal?.aborted) {
-      reject(signal.reason ?? new Error('aborted'));
+      reject(signal.reason ?? new Error("aborted"));
       return;
     }
     const id = setTimeout(resolve, ms);
     signal?.addEventListener(
-      'abort',
+      "abort",
       () => {
         clearTimeout(id);
-        reject(signal.reason ?? new Error('aborted'));
+        reject(signal.reason ?? new Error("aborted"));
       },
       { once: true },
     );
