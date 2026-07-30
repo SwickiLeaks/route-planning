@@ -66,10 +66,11 @@ const reducer = (state: State, action: Action): State => {
         altitudeFt: action.altitudeFt,
         actions: [],
       };
+      // Don't auto-select on create — that would pop the edit panel open and
+      // steal focus mid-typing. Selection happens on an explicit chip/marker click.
       return {
         ...state,
         route: { ...route, waypoints: [...route.waypoints, wp] },
-        selectedWaypointId: wp.id,
       };
     }
 

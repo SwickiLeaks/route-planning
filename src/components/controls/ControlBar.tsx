@@ -1,58 +1,64 @@
-import { useRef, useState } from 'react';
-import type { PointerEvent as ReactPointerEvent } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Box from '@mui/material/Box';
-import DragHandleIcon from '@mui/icons-material/DragHandle';
 import { glassPane } from '@/components/shared/hudStyle';
-import { TOP_PANES } from '@/components/controls/topPaneRegistry';
-import type { TopPane } from '@/components/controls/topPaneRegistry';
-import ControlTile from '@/components/controls/ControlTile';
+import { colors } from '@/theme/tokens';
+import { useRouteBuilder } from '@/route/RouteBuilderContext';
+import RouteBar from '@/components/builder/RouteBar';
+import { SIDE_PANELS } from '@/components/controls/sidePanelRegistry';
 
-const MIN_HEIGHT = 64;
-const COLLAPSE_BELOW = 72;
-const MAX_HEIGHT_VH = 0.85;
-const PANE_TOP = 66;
+// A compact icon+label button that toggles a side panel below the bar.
+const PanelButton = ({
+  icon,
+  label,
+  active,
+  onClick,
+}: {
+  icon: React.ReactElement;
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}) => (
+  <Box
+    onClick={onClick}
+    role="button"
+    aria-pressed={active}
+    sx={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: 0.5,
+      px: 1,
+      py: 0.75,
+      borderRadius: '8px',
+      cursor: 'pointer',
+      userSelect: 'none',
+      flexShrink: 0,
+      color: active ? colors.accent : colors.white,
+      border: `1px solid ${active ? colors.accent : 'transparent'}`,
+      bgcolor: active ? `${colors.accent}1f` : 'transparent',
+      transition: 'color 150ms, border-color 150ms, background-color 150ms',
+      '&:hover': { bgcolor: active ? `${colors.accent}1f` : 'rgba(255,255,255,0.06)' },
+    }}
+  >
+    {icon}
+    <Box sx={{ fontSize: 12.5, fontWeight: 600, display: { xs: 'none', sm: 'block' } }}>{label}</Box>
+  </Box>
+);
 
-// Top control dock: a row of glass tiles that open panes in their declared dock.
+// Top control dock: persistent route entry bar plus panel-launcher buttons.
 const ControlBar = ({ faded = false }: { faded?: boolean }) => {
-  const [active, setActive] = useState<{ top: string | null; left: string | null }>({
-    top: null,
-    left: null,
-  });
-  const [manualHeight, setManualHeight] = useState<number | null>(null);
-  const contentRef = useRef<HTMLDivElement>(null);
-  const drag = useRef<{ startY: number; startHeight: number } | null>(null);
+  const { selectedWaypointId } = useRouteBuilder();
+  const [active, setActive] = useState<string | null>(null);
+  const prevSelected = useRef<string | null>(null);
 
-  const topPane = TOP_PANES.find((p) => p.dock === 'top' && p.id === active.top) ?? null;
-  const leftPane = TOP_PANES.find((p) => p.dock === 'left' && p.id === active.left) ?? null;
-
-  const toggle = (pane: TopPane) => {
-    setActive((a) => ({ ...a, [pane.dock]: a[pane.dock] === pane.id ? null : pane.id }));
-    if (pane.dock === 'top') setManualHeight(null);
-  };
-
-  const onGripPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
-    const current = contentRef.current?.offsetHeight ?? MIN_HEIGHT;
-    drag.current = { startY: event.clientY, startHeight: current };
-    setManualHeight(current);
-    event.currentTarget.setPointerCapture(event.pointerId);
-  };
-
-  const onGripPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (!drag.current) return;
-    const max = Math.round(window.innerHeight * MAX_HEIGHT_VH);
-    const next = drag.current.startHeight + (event.clientY - drag.current.startY);
-    setManualHeight(Math.min(max, Math.max(MIN_HEIGHT, next)));
-  };
-
-  const onGripPointerUp = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (!drag.current) return;
-    const finalHeight = drag.current.startHeight + (event.clientY - drag.current.startY);
-    drag.current = null;
-    if (finalHeight < COLLAPSE_BELOW) {
-      setActive((a) => ({ ...a, top: null }));
-      setManualHeight(null);
+  // Selecting a waypoint (e.g. clicking a chip) reveals its edit panel.
+  useEffect(() => {
+    if (selectedWaypointId && selectedWaypointId !== prevSelected.current) {
+      setActive('edit');
     }
-  };
+    prevSelected.current = selectedWaypointId;
+  }, [selectedWaypointId]);
+
+  const panel = SIDE_PANELS.find((p) => p.id === active) ?? null;
 
   const fade = {
     opacity: faded ? 0.12 : 1,
@@ -67,98 +73,39 @@ const ControlBar = ({ faded = false }: { faded?: boolean }) => {
           position: 'absolute',
           top: 12,
           left: '50%',
-          display: 'flex',
-          gap: 1,
+          width: 'min(1320px, calc(100vw - 24px))',
           ...fade,
           transform: `translateX(-50%) translateY(${faded ? -12 : 0}px)`,
         }}
       >
-        {TOP_PANES.map((pane) => (
-          <ControlTile
-            key={pane.id}
-            icon={pane.icon}
-            label={pane.label}
-            active={active[pane.dock] === pane.id}
-            onClick={() => toggle(pane)}
-          />
-        ))}
-      </Box>
-
-      {topPane && (
         <Box
           sx={{
-            position: 'absolute',
-            top: PANE_TOP,
-            left: '50%',
-            width: 'min(1320px, calc(100vw - 24px))',
-            ...fade,
-            transform: `translateX(-50%) translateY(${faded ? -12 : 0}px)`,
-          }}
-        >
-          <Box sx={{ ...glassPane, overflow: 'hidden' }}>
-            <Box
-              ref={contentRef}
-              sx={{
-                height: manualHeight ?? 'auto',
-                overflowY: manualHeight != null ? 'auto' : 'visible',
-                p: 1.5,
-              }}
-            >
-              {topPane.content}
-            </Box>
-          </Box>
-
-          <Box
-            onPointerDown={onGripPointerDown}
-            onPointerMove={onGripPointerMove}
-            onPointerUp={onGripPointerUp}
-            role="separator"
-            aria-orientation="horizontal"
-            aria-label="Resize pane"
-            sx={{
-              position: 'absolute',
-              top: '100%',
-              left: '50%',
-              transform: 'translate(-50%, -1px)',
-              width: 56,
-              height: 16,
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              bgcolor: glassPane.bgcolor,
-              backdropFilter: glassPane.backdropFilter,
-              border: glassPane.border,
-              borderTop: 'none',
-              borderRadius: '0 0 8px 8px',
-              cursor: 'ns-resize',
-              touchAction: 'none',
-              userSelect: 'none',
-              '&:hover': { bgcolor: 'action.hover' },
-            }}
-          >
-            <DragHandleIcon sx={{ fontSize: 14, opacity: 0.6 }} />
-          </Box>
-        </Box>
-      )}
-
-      {leftPane && (
-        <Box
-          sx={{
-            position: 'absolute',
-            top: PANE_TOP,
-            left: 12,
-            width: 'min(300px, calc(100vw - 24px))',
-            maxHeight: 'calc(100vh - 90px)',
-            overflowY: 'auto',
             ...glassPane,
-            ...fade,
-            transform: `translateX(${faded ? -12 : 0}px)`,
-            p: 1.5,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            p: 1,
           }}
         >
-          {leftPane.content}
+          <RouteBar />
+          <Box sx={{ width: '1px', alignSelf: 'stretch', bgcolor: 'rgba(255,255,255,0.1)', mx: 0.25 }} />
+          {SIDE_PANELS.map((p) => (
+            <PanelButton
+              key={p.id}
+              icon={p.icon}
+              label={p.label}
+              active={active === p.id}
+              onClick={() => setActive((cur) => (cur === p.id ? null : p.id))}
+            />
+          ))}
         </Box>
-      )}
+
+        {panel && (
+          <Box sx={{ ...glassPane, mt: 1, p: 1.5, maxHeight: 'calc(100vh - 140px)', overflowY: 'auto' }}>
+            {panel.content}
+          </Box>
+        )}
+      </Box>
     </Box>
   );
 };

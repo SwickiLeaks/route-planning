@@ -52,6 +52,7 @@ const MapView = ({
   const [ready, setReady] = useState(protocolRegistered);
   const [webglOk] = useState(isWebGLAvailable);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [dragging, setDragging] = useState(false);
 
   useEffect(() => {
     registerPmtilesProtocol();
@@ -85,7 +86,9 @@ const MapView = ({
         dragRotate={false}
         touchZoomRotate={false}
         onError={handleError}
-        cursor={placing ? 'crosshair' : undefined}
+        cursor={placing ? 'crosshair' : dragging ? 'grabbing' : 'grab'}
+        onDragStart={() => setDragging(true)}
+        onDragEnd={() => setDragging(false)}
         onClick={(e) => {
           // Only real map-canvas clicks count as background clicks. Clicks on a
           // marker/chip target their own DOM (which may even unmount mid-click,

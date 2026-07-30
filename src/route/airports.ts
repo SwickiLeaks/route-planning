@@ -13,6 +13,7 @@ export const AIRPORTS: Airport[] = [
   { code: 'KJWN', name: 'John C. Tune', position: { lat: 36.1824, lng: -86.8866 } },
   { code: 'KMQY', name: 'Smyrna / Rutherford County', position: { lat: 36.0090, lng: -86.5202 } },
   { code: 'KCKV', name: 'Clarksville — Outlaw Field', position: { lat: 36.6219, lng: -87.4150 } },
+  { code: 'KHOP', name: 'Campbell AAF — Fort Campbell', position: { lat: 36.6685, lng: -87.4962 } },
   { code: 'M02', name: 'Dickson Municipal', position: { lat: 36.0781, lng: -87.4028 } },
   { code: 'M91', name: 'Springfield — Robertson County', position: { lat: 36.5325, lng: -86.9205 } },
   { code: 'KMBT', name: 'Murfreesboro Municipal', position: { lat: 35.8785, lng: -86.3752 } },

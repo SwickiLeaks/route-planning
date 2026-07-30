@@ -49,13 +49,11 @@ const Dashboard = () => {
   // Create the demo's mission + route on startup (see samples.java flow).
   useMissionSession();
 
-  const seed = useMemo<BuilderRoute | null>(() => {
+  // Start with an empty route; the user builds it by entering airport codes.
+  const seed = useMemo<BuilderRoute>(() => {
     const first = routes[0];
-    if (!first) return null;
-    return { ...first, waypoints: first.waypoints.map((w) => ({ ...w, actions: [] })) };
+    return { id: first?.id ?? 'route', name: first?.name ?? 'New Route', waypoints: [] };
   }, [routes]);
-
-  if (!seed) return null;
 
   return (
     <RouteBuilderProvider initialRoute={seed}>
