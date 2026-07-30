@@ -9,11 +9,11 @@
   /* Fallbacks for the first paint before React mounts. The authoritative
      values live in src/theme/tokens.ts and are re-injected at runtime by
      CssBaseline — keep these visually close, but don't hand-tune here. */
-  --bg: #0e0e0f;
-  --panel: #161618;
-  --panel-overlay: rgba(11, 11, 12, 0.9);
-  --border: #2a2a2d;
-  --fg: #e7e3d9;
+  --bg: #0d0d0d;
+  --panel: #141412;
+  --panel-overlay: rgba(13, 13, 13, 0.85);
+  --border: #2a2822;
+  --fg: #faf9f7;
 }
 
 * {
@@ -31,15 +31,4 @@ body {
   min-height: 100vh;
   background: var(--bg);
   color: var(--fg);
-}
-
-/* Loading treatment for calc-in-flight readouts. */
-@keyframes hud-pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.4;
-  }
 }

@@ -1,33 +1,44 @@
-import type { Feature, FeatureCollection, LineString, Point } from 'geojson';
-import type { Route } from '@/types/proto';
-import { mapAccents } from '@/theme/tokens';
+import { mapAccents } from "@/theme/tokens";
+import type { Route } from "@/types/proto";
+import type { Feature, FeatureCollection, LineString, Point } from "geojson";
 
+// Route colors from theme
 const ROUTE_COLORS = mapAccents.routeColors;
 
-// Color for a route index, shared with the route panel swatches.
+// Route color assignment
 export const routeColor = (index: number) =>
   ROUTE_COLORS[index % ROUTE_COLORS.length];
 
-// Route paths, one LineString per route.
-export const routesToLines = (routes: Route[]): FeatureCollection<LineString> => ({
-  type: 'FeatureCollection',
-  features: routes.map((route, index): Feature<LineString> => ({
-    type: 'Feature',
-    id: route.id,
-    geometry: {
-      type: 'LineString',
-      coordinates: route.waypoints.map((w) => [w.position.lng, w.position.lat]),
-    },
-    properties: {
-      routeId: route.id,
-      name: route.name,
-      color: routeColor(index),
-    },
-  })),
+// Need to convert routes to "lines" that GeoJSON understands
+export const routesToLines = (
+  routes: Route[],
+): FeatureCollection<LineString> => ({
+  type: "FeatureCollection",
+  features: routes.map(
+    (route, index): Feature<LineString> => ({
+      type: "Feature",
+      id: route.id,
+      geometry: {
+        type: "LineString",
+        coordinates: route.waypoints.map((w) => [
+          w.position.lng,
+          w.position.lat,
+        ]),
+      },
+      properties: {
+        routeId: route.id,
+        name: route.name,
+        color: routeColor(index),
+      },
+    }),
+  ),
 });
 
-// Waypoint markers across all routes, deduped by position.
-export const routesToWaypoints = (routes: Route[]): FeatureCollection<Point> => {
+// Need to convert routes to "waypoints" that GeoJSON understands
+// Clunky way of avoiding overlapping waypoints.
+export const routesToWaypoints = (
+  routes: Route[],
+): FeatureCollection<Point> => {
   const seen = new Set<string>();
   const features: Feature<Point>[] = [];
 
@@ -38,10 +49,10 @@ export const routesToWaypoints = (routes: Route[]): FeatureCollection<Point> => 
       seen.add(key);
 
       features.push({
-        type: 'Feature',
+        type: "Feature",
         id: `${route.id}:${waypoint.id}`,
         geometry: {
-          type: 'Point',
+          type: "Point",
           coordinates: [waypoint.position.lng, waypoint.position.lat],
         },
         properties: {
@@ -54,5 +65,5 @@ export const routesToWaypoints = (routes: Route[]): FeatureCollection<Point> => 
     }
   });
 
-  return { type: 'FeatureCollection', features };
+  return { type: "FeatureCollection", features };
 };

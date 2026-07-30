@@ -1,0 +1,146 @@
+syntax = "proto3";
+
+option csharp_namespace = "ProtoMsnSvr";
+
+package msnsvr;
+
+service MsnSvr {
+	rpc GetFocus(CallId) returns (ParentId);
+	rpc SetFocus(ParentId) returns (ParentId);
+
+	rpc TransactionData(TransactionRequest) returns (TransactionResponse);
+
+	rpc GetChildrenInfo(ChildRequest) returns (ChildInfoList);
+	rpc AddChild(ChildRequest) returns (ChildInfo);
+	rpc RemoveChild(ChildRequest) returns (ChildInfo);
+
+	rpc GetAttributes(AttributeRequest) returns (AttributeInfoList);
+	rpc SetAttributes(AttributeRequest) returns (AttributeInfoList);
+
+	// An action requires an action name (set with the CallId 'context')
+	// A target (set in the ParentId)
+	// An optional list of parameters can be included in the 'attributes' list
+	// If information is returned it will be in the AttributeInfoList
+	rpc DoAction(AttributeRequest) returns (AttributeInfoList);
+
+	rpc Handshake(AppId) returns (State);
+}
+
+message AppId {
+	string id = 1;
+}
+
+message State {
+	string state = 1;
+}
+
+// Information that will help identify the caller
+message CallId {
+	string version = 1;
+	string client_id = 2;	
+	string transaction_id = 3;
+	string context = 4;			// custom context clues
+}
+
+message TransactionRequest {
+	CallId caller = 1;
+	string name = 2;
+	string mission_id = 3;
+	int32 request_type = 4;
+	int32 timeout_mill = 5;
+}
+
+message TransactionResponse {
+	CallId caller = 1;
+	string name = 2;
+	string mission_id = 3;
+	int32 status = 4;
+	bool supports_undo = 5;
+	bool supports_redo = 6;
+	bool supports_rollback = 7;
+	bool can_undo = 8;
+	bool can_redo = 9;
+	bool can_rollback = 10;
+	string undo_text = 11;
+	string redo_text = 12;
+	string current_text = 13;
+}
+
+message IdType {
+	int32 type = 1;
+	string id = 2;
+}
+// Identify the parent object to modify. The parent's 
+// ancestors must be included. e.g if a route_id is specified
+// then a mission_id must also be specified. It is also expected 
+// that parent hierarchy is in order. In otherwords, a route id
+// will be listed before the mission id.
+message ParentId {
+	repeated IdType ids = 1;
+}
+
+// Identify the child object to add, remove, or modify.
+// In some cases a parent may own more than one child type.
+// The 'type' field is used to specify what child type.
+message ChildId {
+	string id = 1;
+	int32 type = 2;
+	int32 index = 3;
+}
+
+// A request to add or remove children from a parent object
+message ChildRequest {
+	CallId client = 1;
+	ParentId parent = 2;
+	ChildId child = 3;
+}
+
+// An attribute entry
+message AttributeInfo {
+	string name = 1;
+	string value = 2;
+	bool is_null = 3; 
+	string type_name = 4;
+	string assembly_name = 5;
+}
+
+// A collection of attribute entries
+message AttributeInfoList {
+	repeated AttributeInfo attributes = 2;
+}
+
+// A request to get/set attributes
+message AttributeRequest {
+	CallId client = 1;
+	ParentId parent = 2;
+	repeated AttributeInfo attributes = 3;
+}
+
+// The response when adding or removing a child object
+message ChildInfo {
+	string id = 1;
+	string name = 2;
+	int32 order = 3;
+	int32 type = 4;
+}
+
+// The response when multiple child objects are added or removed
+message ChildInfoList {
+	int32 type = 2;
+	repeated ChildInfo objects = 3;
+}
+
+message CollPack {
+	int32 changeaction = 1;
+	ParentId parentId = 2;
+	repeated ParentId newItems = 3;
+	repeated ParentId oldItems = 4;
+	int32 newStartingIndex = 5;
+	int32 oldStartingIndex = 6;
+
+}
+
+message AttPack {
+	ParentId parentId = 1;
+	string attribute = 2;
+}

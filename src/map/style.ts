@@ -3,10 +3,18 @@ import type { LayerSpecification, StyleSpecification } from 'maplibre-gl';
 import { DETAIL_MIN_ZOOM } from '@/map/region';
 import { mapAccents } from '@/theme/tokens';
 
+/**
+ * Everything the map needs is served from public/map/ — no runtime network
+ * calls. Run `npm run map:fetch` to (re)generate the .pmtiles archives.
+ *
+ * Filenames are region-neutral, so switching regions is a script run rather
+ * than a code change. Camera constants live in the generated region.ts.
+ */
 const BASEMAP_URL = 'pmtiles:///map/basemap.pmtiles';
 const CONTEXT_URL = 'pmtiles:///map/context.pmtiles';
 const TERRAIN_URL = 'pmtiles:///map/terrain.pmtiles';
 
+/** MapLibre fetches label glyphs over HTTP; point it at our vendored subset. */
 const GLYPHS_URL = '/map/fonts/{fontstack}/{range}.pbf';
 
 const BASEMAP_SOURCE = 'protomaps';
@@ -26,8 +34,12 @@ const hillshadeLayer: LayerSpecification = {
   id: 'terrain-hillshade',
   type: 'hillshade',
   source: TERRAIN_SOURCE,
+  // The DEM extract only covers the detail region. Below the handoff its
+  // low-zoom parent tiles would shade one lonely rectangle of the continent.
   minzoom: DETAIL_MIN_ZOOM,
   paint: {
+    // Tuned for the dark flavor: relief should read as depth, not haze.
+    // Colors come from the design tokens so re-theming restyles terrain too.
     'hillshade-exaggeration': 0.6,
     'hillshade-shadow-color': mapAccents.hillshadeShadow,
     'hillshade-highlight-color': mapAccents.hillshadeHighlight,
@@ -36,7 +48,15 @@ const hillshadeLayer: LayerSpecification = {
   },
 };
 
-// Context layers, prefixed to keep ids unique and labels capped at the handoff.
+/**
+ * Layer ids must be unique across the style, but `layers()` generates the same
+ * ids for both sources — so the context set gets prefixed.
+ *
+ * Context geometry is left uncapped so it keeps drawing (overzoomed) outside
+ * the detail bbox, which is what stops high-zoom panning from hitting a void.
+ * Its *labels* are capped at the handoff, otherwise every town would render
+ * twice once the detail source kicks in.
+ */
 const contextLayers = (): LayerSpecification[] =>
   layers(CONTEXT_SOURCE, flavor, { lang: 'en' }).map((layer) => ({
     ...layer,
@@ -44,7 +64,13 @@ const contextLayers = (): LayerSpecification[] =>
     ...(layer.type === 'symbol' ? { maxzoom: DETAIL_MIN_ZOOM } : {}),
   }));
 
-// Full-detail layers, hidden below the handoff and stripped of the background.
+/**
+ * Full-detail layers, hidden below the handoff so they can't fight context.
+ *
+ * The generated set opens with an opaque `background` layer. Keeping it here
+ * would paint over the context map everywhere the detail extract has no data,
+ * so only the context set contributes a background.
+ */
 const detailLayers = (): LayerSpecification[] =>
   layers(BASEMAP_SOURCE, flavor, { lang: 'en' })
     .filter((layer) => layer.type !== 'background')
@@ -53,7 +79,11 @@ const detailLayers = (): LayerSpecification[] =>
       minzoom: Math.max(layer.minzoom ?? 0, DETAIL_MIN_ZOOM),
     }));
 
-// Inserts the hillshade above the landmass fill but below roads and labels.
+/**
+ * Slots the hillshade above the landmass fill but below roads and labels, so
+ * relief reads as terrain the map sits on rather than a wash over everything.
+ * Protomaps orders its layers earth → landuse/water → roads → labels.
+ */
 const withHillshade = (base: LayerSpecification[]): LayerSpecification[] => {
   const firstRoad = base.findIndex((layer) => layer.id.startsWith('roads'));
   const insertAt = firstRoad === -1 ? base.length : firstRoad;
@@ -61,7 +91,6 @@ const withHillshade = (base: LayerSpecification[]): LayerSpecification[] => {
   return [...base.slice(0, insertAt), hillshadeLayer, ...base.slice(insertAt)];
 };
 
-// Builds the full MapLibre style spec for the map.
 export const buildMapStyle = (): StyleSpecification => ({
   version: 8,
   glyphs: GLYPHS_URL,
@@ -79,10 +108,13 @@ export const buildMapStyle = (): StyleSpecification => ({
     [TERRAIN_SOURCE]: {
       type: 'raster-dem',
       url: TERRAIN_URL,
+      // Mapterhorn ships Terrarium-encoded tiles. MapLibre defaults to Mapbox
+      // encoding, which decodes without error but yields wrong elevations.
       encoding: 'terrarium',
       tileSize: 512,
       attribution: ATTRIBUTION_TERRAIN,
     },
   },
+  // Context underneath, detail (plus hillshade) on top.
   layers: [...contextLayers(), ...withHillshade(detailLayers())],
 });
