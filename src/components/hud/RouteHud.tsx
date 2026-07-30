@@ -7,7 +7,6 @@ import type { RouteCalculation } from '@/calc/types';
 import type { BuilderRoute } from '@/route/routeBuilderTypes';
 import { MUTED, glassPane, fmtHrMin, fmtLb, fmtNm, fuelStateColor } from '@/components/shared/hudStyle';
 import MetricTile from '@/components/hud/MetricTile';
-import FuelConsumption from '@/components/hud/FuelConsumption';
 import RouteFlow from '@/components/hud/RouteFlow';
 
 interface RouteHudProps {
@@ -152,10 +151,6 @@ const RouteHud = ({ route, calc, calculating = false, faded = false }: RouteHudP
           ) : (
             <RouteFlow route={route} calc={calc} />
           )}
-        </Box>
-
-        <Box sx={{ ...glassPane, width: '100%', px: 2, py: 1.25, ...dim }}>
-          <FuelConsumption calc={calc} />
         </Box>
         </Box>
       </Box>

@@ -96,7 +96,7 @@ const WaypointEditor = () => {
 
   return (
     <Box sx={{ borderRadius: '11px', border: `1px solid ${colors.accent}44`, bgcolor: 'rgba(255,255,255,0.03)', overflow: 'hidden' }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1.5, py: 1, bgcolor: `${colors.accent}12`, borderBottom: `1px solid ${colors.accent}30` }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1.25, py: 0.5, bgcolor: `${colors.accent}12`, borderBottom: `1px solid ${colors.accent}30` }}>
         <Box sx={{ fontFamily: MONO, fontSize: 12, fontWeight: 700, color: colors.black, bgcolor: accent, borderRadius: '4px', px: '6px', py: '2px' }}>
           {String(index + 1).padStart(2, '0')}
         </Box>
@@ -113,15 +113,15 @@ const WaypointEditor = () => {
         </Button>
       </Box>
 
-      <Stack spacing={1.5} sx={{ p: 1.5 }}>
+      <Stack spacing={1.25} sx={{ p: 1.25 }}>
         <Box>
-          <Typography sx={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase', color: FAINT, mb: 0.75 }}>
+          <Typography sx={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase', color: FAINT, mb: 0.5 }}>
             Details
           </Typography>
           <WaypointDetailsEditor key={waypoint.id} waypoint={waypoint} />
         </Box>
         <Box>
-          <Typography sx={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase', color: FAINT, mb: 0.75 }}>
+          <Typography sx={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase', color: FAINT, mb: 0.5 }}>
             Actions
           </Typography>
           <HoverEditor waypoint={waypoint} />

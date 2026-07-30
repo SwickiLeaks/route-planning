@@ -133,7 +133,7 @@ const RouteBar = () => {
           flexWrap: 'wrap',
           gap: '6px',
           px: 1.25,
-          py: 0.75,
+          py: 0.5,
           borderRadius: '10px',
           bgcolor: 'rgba(255,255,255,0.03)',
           border: `1px solid ${surface.border}`,

@@ -88,7 +88,7 @@ const ControlBar = ({ faded = false }: { faded?: boolean }) => {
             display: 'flex',
             alignItems: 'center',
             gap: 1,
-            p: 1,
+            p: 0.75,
           }}
         >
           <RouteBar />
@@ -105,7 +105,7 @@ const ControlBar = ({ faded = false }: { faded?: boolean }) => {
         </Box>
 
         {(editing || toolPanel) && (
-          <Box sx={{ ...glassPane, mt: 1, p: 1.5, maxHeight: 'calc(100vh - 140px)', overflowY: 'auto' }}>
+          <Box sx={{ ...glassPane, mt: 0.75, p: 1, maxHeight: 'calc(100vh - 140px)', overflowY: 'auto' }}>
             {editing ? <WaypointEditor /> : toolPanel?.content}
           </Box>
         )}
