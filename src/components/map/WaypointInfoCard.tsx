@@ -1,8 +1,11 @@
+import { useState } from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import IconButton from '@mui/material/IconButton';
 import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
+import CheckIcon from '@mui/icons-material/Check';
 import { colors } from '@/theme/tokens';
 import { MONO, MUTED, FAINT, fmtLb, fmtMinSec } from '@/components/shared/hudStyle';
 import { useRouteBuilder } from '@/route/RouteBuilderContext';
@@ -70,7 +73,40 @@ const HoverEditor = ({ waypoint }: { waypoint: BuilderWaypoint }) => {
   );
 };
 
-// Expanded tooltip content: altitude, inbound-leg readout, and actions.
+// Inline name + altitude editor shown in place of the readout row.
+const DetailsEditor = ({ waypoint }: { waypoint: BuilderWaypoint }) => {
+  const { updateWaypoint } = useRouteBuilder();
+  const [name, setName] = useState(waypoint.name);
+  const [alt, setAlt] = useState(waypoint.altitudeFt != null ? String(waypoint.altitudeFt) : '');
+
+  return (
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flex: 1, minWidth: 0 }}>
+      <TextField
+        size="small"
+        label="Name"
+        value={name}
+        onChange={(e) => {
+          setName(e.target.value);
+          if (e.target.value.trim()) updateWaypoint(waypoint.id, { name: e.target.value });
+        }}
+        sx={{ flex: 1, minWidth: 0 }}
+      />
+      <TextField
+        size="small"
+        label="Alt (ft)"
+        value={alt}
+        onChange={(e) => {
+          setAlt(e.target.value);
+          updateWaypoint(waypoint.id, { altitudeFt: toInt(e.target.value) });
+        }}
+        sx={{ width: '5.5rem' }}
+      />
+    </Box>
+  );
+};
+
+// Expanded tooltip content: altitude, inbound-leg readout, and actions — with an
+// inline edit toggle for name and altitude so no separate panel is needed.
 const WaypointInfoCard = ({
   waypoint,
   isStart,
@@ -79,22 +115,42 @@ const WaypointInfoCard = ({
   waypoint: BuilderWaypoint;
   isStart: boolean;
   leg?: LegCalc;
-}) => (
-  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, px: '2px', pt: 1, mt: '2px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-    <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 2.5 }}>
-      <Field label="Alt" value={`${(waypoint.altitudeFt ?? 0).toLocaleString()} ft`} />
-      {leg ? (
-        <>
-          <Field label="Time" value={fmtMinSec(leg.legTimeMin)} />
-          <Field label="Fuel" value={`${fmtLb(leg.legFuelLb)} lb`} color={colors.gold} />
-        </>
-      ) : (
-        isStart && <Box sx={{ fontSize: 10.5, letterSpacing: '0.05em', textTransform: 'uppercase', color: FAINT }}>Route start</Box>
-      )}
-    </Box>
+}) => {
+  const [editing, setEditing] = useState(false);
 
-    <HoverEditor waypoint={waypoint} />
-  </Box>
-);
+  return (
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, px: '2px', pt: 1, mt: '2px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+        {editing ? (
+          <DetailsEditor waypoint={waypoint} />
+        ) : (
+          <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 2.5, flex: 1 }}>
+            <Field label="Alt" value={`${(waypoint.altitudeFt ?? 0).toLocaleString()} ft`} />
+            {leg ? (
+              <>
+                <Field label="Time" value={fmtMinSec(leg.legTimeMin)} />
+                <Field label="Fuel" value={`${fmtLb(leg.legFuelLb)} lb`} color={colors.gold} />
+              </>
+            ) : (
+              isStart && <Box sx={{ fontSize: 10.5, letterSpacing: '0.05em', textTransform: 'uppercase', color: FAINT }}>Route start</Box>
+            )}
+          </Box>
+        )}
+        <Button
+          size="small"
+          variant={editing ? 'outlined' : 'contained'}
+          color="primary"
+          onClick={() => setEditing((e) => !e)}
+          startIcon={editing ? <CheckIcon sx={{ fontSize: 16 }} /> : <EditOutlinedIcon sx={{ fontSize: 16 }} />}
+          sx={{ flexShrink: 0, px: 1.25, boxShadow: editing ? 'none' : `0 0 10px ${colors.accent}66` }}
+        >
+          {editing ? 'Done' : 'Edit'}
+        </Button>
+      </Box>
+
+      <HoverEditor waypoint={waypoint} />
+    </Box>
+  );
+};
 
 export default WaypointInfoCard;

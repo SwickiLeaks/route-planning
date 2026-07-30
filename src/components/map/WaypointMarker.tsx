@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { Marker } from 'react-map-gl/maplibre';
 import Box from '@mui/material/Box';
 import { colors } from '@/theme/tokens';
@@ -26,7 +26,9 @@ const WaypointMarker = ({
   selected,
   onSelect,
 }: WaypointMarkerProps) => {
-  const [expanded, setExpanded] = useState(false);
+  // The tooltip is expanded exactly when this waypoint is selected, so clicking a
+  // route chip (which selects) opens it on the map too.
+  const expanded = selected;
   const chipRef = useRef<HTMLDivElement>(null);
   const baseColor = (waypoint.actions?.length ?? 0) > 0 ? colors.accent : isEndpoint ? colors.gold : colors.brown;
   const accent = selected ? colors.accent : baseColor;
@@ -36,11 +38,6 @@ const WaypointMarker = ({
   const actions = waypoint.actions ?? [];
   const lng = waypoint.position.lng;
   const lat = waypoint.position.lat;
-
-  // Collapse when this waypoint is deselected.
-  useEffect(() => {
-    if (!selected) setExpanded(false);
-  }, [selected]);
 
   // MapLibre markers preventDefault on mousedown (blocking input focus) and the
   // map pans on drag; stop those on the chip so its controls work.
@@ -61,10 +58,7 @@ const WaypointMarker = ({
     onSelect();
   };
 
-  const toggle = () => {
-    onSelect();
-    setExpanded((o) => !o);
-  };
+  const toggle = () => onSelect();
 
   return (
     <>
