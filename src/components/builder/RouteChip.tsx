@@ -33,11 +33,11 @@ const RouteChip = ({ waypoint, index, selected, onSelect, onRemove }: RouteChipP
       sx={{
         display: 'flex',
         alignItems: 'center',
-        gap: '6px',
-        pl: '6px',
-        pr: '2px',
-        py: '3px',
-        borderRadius: '7px',
+        gap: '7px',
+        pl: '7px',
+        pr: '5px',
+        py: '5px',
+        borderRadius: '9px',
         cursor: isDragging ? 'grabbing' : 'grab',
         userSelect: 'none',
         bgcolor: selected ? `${accent}26` : 'rgba(255,255,255,0.05)',
@@ -52,22 +52,23 @@ const RouteChip = ({ waypoint, index, selected, onSelect, onRemove }: RouteChipP
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          width: 17,
-          height: 17,
-          borderRadius: '50%',
+          minWidth: 20,
+          height: 20,
+          px: '5px',
+          borderRadius: '6px',
           flexShrink: 0,
           fontFamily: MONO,
-          fontSize: 10,
+          fontSize: 12,
           fontWeight: 700,
           lineHeight: 1,
-          color: selected ? colors.black : accent,
-          bgcolor: selected ? accent : `${accent}22`,
-          border: `1px solid ${accent}${selected ? '' : '66'}`,
+          color: colors.black,
+          bgcolor: accent,
+          boxShadow: selected ? `0 0 0 2px ${accent}55` : 'none',
         }}
       >
         {index + 1}
       </Box>
-      <Box sx={{ fontFamily: MONO, fontSize: 13, fontWeight: 600, color: colors.white }}>
+      <Box sx={{ fontFamily: MONO, fontSize: 14, fontWeight: 600, color: colors.white }}>
         {waypoint.name}
       </Box>
       <Box
@@ -81,13 +82,14 @@ const RouteChip = ({ waypoint, index, selected, onSelect, onRemove }: RouteChipP
         }}
         sx={{
           display: 'flex',
+          cursor: 'pointer',
           color: colors.brown,
           borderRadius: '4px',
           p: '1px',
           '&:hover': { color: colors.red },
         }}
       >
-        <CloseIcon sx={{ fontSize: 15 }} />
+        <CloseIcon sx={{ fontSize: 16 }} />
       </Box>
     </Box>
   );

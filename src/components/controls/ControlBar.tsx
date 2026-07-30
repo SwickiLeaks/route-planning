@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Box from '@mui/material/Box';
 import { glassPane } from '@/components/shared/hudStyle';
 import { colors } from '@/theme/tokens';
 import { useRouteBuilder } from '@/route/RouteBuilderContext';
 import RouteBar from '@/components/builder/RouteBar';
+import WaypointEditor from '@/components/builder/WaypointEditor';
 import { SIDE_PANELS } from '@/components/controls/sidePanelRegistry';
 
 // A compact icon+label button that toggles a side panel below the bar.
@@ -46,19 +47,22 @@ const PanelButton = ({
 
 // Top control dock: persistent route entry bar plus panel-launcher buttons.
 const ControlBar = ({ faded = false }: { faded?: boolean }) => {
-  const { selectedWaypointId } = useRouteBuilder();
+  const { selectedWaypointId, selectWaypoint } = useRouteBuilder();
   const [active, setActive] = useState<string | null>(null);
-  const prevSelected = useRef<string | null>(null);
 
-  // Selecting a waypoint (e.g. clicking a chip) reveals its edit panel.
+  // Selecting a waypoint (chip or map marker) closes any tool panel; its editor shows instead.
   useEffect(() => {
-    if (selectedWaypointId && selectedWaypointId !== prevSelected.current) {
-      setActive('edit');
-    }
-    prevSelected.current = selectedWaypointId;
+    if (selectedWaypointId) setActive(null);
   }, [selectedWaypointId]);
 
-  const panel = SIDE_PANELS.find((p) => p.id === active) ?? null;
+  // Opening a tool panel clears the current selection so only one panel shows at a time.
+  const openPanel = (id: string) => {
+    selectWaypoint(null);
+    setActive((cur) => (cur === id ? null : id));
+  };
+
+  const toolPanel = SIDE_PANELS.find((p) => p.id === active) ?? null;
+  const editing = selectedWaypointId != null;
 
   const fade = {
     opacity: faded ? 0.12 : 1,
@@ -95,14 +99,14 @@ const ControlBar = ({ faded = false }: { faded?: boolean }) => {
               icon={p.icon}
               label={p.label}
               active={active === p.id}
-              onClick={() => setActive((cur) => (cur === p.id ? null : p.id))}
+              onClick={() => openPanel(p.id)}
             />
           ))}
         </Box>
 
-        {panel && (
+        {(editing || toolPanel) && (
           <Box sx={{ ...glassPane, mt: 1, p: 1.5, maxHeight: 'calc(100vh - 140px)', overflowY: 'auto' }}>
-            {panel.content}
+            {editing ? <WaypointEditor /> : toolPanel?.content}
           </Box>
         )}
       </Box>
