@@ -31,12 +31,7 @@ export const ModelType = {
 } as const;
 
 // TransactionRequest.request_type codes (TransactionAction ordinals).
-export const TransactionAction = {
-  Metadata: 0,
-  Start: 1,
-  Commit: 2,
-  Rollback: 3,
-} as const;
+export const TransactionAction = { MetaData: 0, Start: 1, Commit: 2, Rollback: 3 } as const;
 
 // SegmentCalcState values. "Calculating" is the only one the sample confirms;
 // confirm the rest against the service's CalculationStatus enum.
@@ -63,8 +58,8 @@ export const PointAttribute = {
   Coordinate: { id: "Coordinate", type: "MP.Core.Navigation.Coordinate" },
 } as const;
 
-const CLIENT_ID = "route-planning-demo";
-const PROTOCOL_VERSION = "1.0";
+const CLIENT_ID = 'demo';
+const PROTOCOL_VERSION = '1.0.0.0';
 const DEFAULT_TIMEOUT_MS = 5000;
 
 // The CLR assembly an attribute type belongs to, keyed by its namespace prefix.
@@ -110,7 +105,7 @@ export class MissionClient {
   }
 
   // Connectivity check; returns the server's reported State.
-  async handshake(appId = "handshake"): Promise<string> {
+  async handshake(appId = 'demo'): Promise<string> {
     const res = await this.client.handshake({ id: appId });
     return res.state;
   }

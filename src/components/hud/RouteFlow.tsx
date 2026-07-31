@@ -1,4 +1,6 @@
+import { Fragment } from 'react';
 import Box from '@mui/material/Box';
+import ArrowRightAltIcon from '@mui/icons-material/ArrowRightAlt';
 import { colors } from '@/theme/tokens';
 import type { LegCalc, RouteCalculation } from '@/calc/types';
 import type { BuilderRoute, BuilderWaypoint, WaypointActionType } from '@/route/routeBuilderTypes';
@@ -108,20 +110,29 @@ const PointTile = ({
   );
 };
 
+// A directional guide drawn between consecutive tiles.
+const FlowArrow = () => (
+  <Box sx={{ flex: '0 0 auto', display: 'flex', alignItems: 'center', color: colors.accent, opacity: 0.55 }}>
+    <ArrowRightAltIcon sx={{ fontSize: 24 }} />
+  </Box>
+);
+
 // Wrapping flow of combined point/leg tiles; each tile owns its inbound leg.
 const RouteFlow = ({ route, calc }: { route: BuilderRoute; calc: RouteCalculation }) => {
   const lastIndex = route.waypoints.length - 1;
 
   return (
-    <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'stretch', justifyContent: 'center', gap: '6px', rowGap: '8px' }}>
+    <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'stretch', justifyContent: 'flex-start', gap: '6px', rowGap: '8px' }}>
       {route.waypoints.map((wp, i) => (
-        <PointTile
-          key={wp.id}
-          waypoint={wp}
-          index={i}
-          isEndpoint={i === 0 || i === lastIndex}
-          leg={calc.legs[i - 1]}
-        />
+        <Fragment key={wp.id}>
+          <PointTile
+            waypoint={wp}
+            index={i}
+            isEndpoint={i === 0 || i === lastIndex}
+            leg={calc.legs[i - 1]}
+          />
+          {i < lastIndex && <FlowArrow />}
+        </Fragment>
       ))}
     </Box>
   );

@@ -84,7 +84,14 @@ const WaypointMarker = ({
         </Box>
       </Marker>
 
-      <Marker longitude={lng} latitude={lat} anchor="bottom-left" offset={[10, -9]}>
+      <Marker
+        longitude={lng}
+        latitude={lat}
+        anchor="bottom-left"
+        offset={[10, -9]}
+        // Lift the expanded tooltip above its neighbours so options aren't covered.
+        style={{ zIndex: expanded ? 5 : selected ? 3 : 1 }}
+      >
         <Box
           ref={chipRef}
           sx={{
