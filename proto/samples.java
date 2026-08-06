@@ -12,6 +12,7 @@ import mp.core.serialization.CrossPlatformSerializer;
 import msnsvr.MsnSvrOuterClass;
 import umi.enums.CalculationStatus;
 import umi.enums.ModelType;
+import umi.enums.PointUsageType;
 import umi.enums.TransactionAction;
 import umi.interfaces.IRouteModel;
 import umirpc.interfaces.IMsnSvrClient;
@@ -44,13 +45,31 @@ public enum ModelType
     }
 }
 
+
 public class Samples {
     private static final Logger logger = Logger.getLogger("CPMS UMI Samples");
     static int _timeout = 5000;
+
+    static final public String PropertyPrefix = "PropertyInfo";
+
+    /***
+     * ID of the active mission
+     */
     String _activeMissionId = "";
 
+    /***
+     * ID of the current mission
+     */
     String _currentMissionId;
+
+    /***
+     * ID of the current route
+     */
     String _currentRouteId;
+
+    /***
+     * ID of the current segment
+     */
     String _currentSegmentId;
 
     msnsvr.MsnSvrOuterClass.CallId _callerId = null;
@@ -60,6 +79,9 @@ public class Samples {
         return null;
     }
 
+    /***
+     * Retrieves information about the caller
+     */
     MsnSvrOuterClass.CallId getCallId()
     {
         if(_callerId == null)
@@ -68,7 +90,9 @@ public class Samples {
     }
 
 
-
+    /***
+     * Creates a new transaction to edit a mission. This call must always be followed by endTransaction
+     */
     void startTransaction(String missionID, String description) {
         IMsnSvrClient client = getRpcClient();
 
@@ -97,6 +121,9 @@ public class Samples {
         }
     }
 
+    /***
+     * Ends a transaction. This call must always be proceeded by startTransaction
+     */
     void endTransaction() {
         IMsnSvrClient client = getRpcClient();
 
@@ -108,7 +135,7 @@ public class Samples {
                                 .build())
                 .setMissionId(_activeMissionId)
                 .setName("")
-                .setRequestType(TransactionAction.Start.ordinal())
+                .setRequestType(2)
                 .setTimeoutMill(_timeout);
         MsnSvrOuterClass.TransactionResponse response = client.TransactionData(trBuilder.build());
 
@@ -160,7 +187,7 @@ public class Samples {
 
     String addRoute(String missionId){
         // start transaction
-        startTransaction("", "Add route");
+        startTransaction(_currentMissionId, "Add route");
 
         // add mission
         MsnSvrOuterClass.ChildRequest.Builder crBuilder = MsnSvrOuterClass.ChildRequest.newBuilder();
@@ -253,11 +280,16 @@ public class Samples {
         return insertPointToCurrentRoute(numChildren);
     }
 
+    /***
+     * Inserts a point into a route segment at the supplied index in the point list
+     * @param index Index to insert point. Zero indicates beginning of route.
+     * @return ID of the inserted point
+     */
     String insertPointToCurrentRoute(int index){
         String newPointId = "";
 
         // start transaction
-        startTransaction("", "Add route point");
+        startTransaction(_currentMissionId, "Add route point");
 
         // add mission
         MsnSvrOuterClass.ChildRequest.Builder crBuilder = MsnSvrOuterClass.ChildRequest.newBuilder();
@@ -291,12 +323,51 @@ public class Samples {
         return newPointId;
     }
 
+    /***
+     * Sets an attribute's value on a route point.
+     * @param pointId ID of the point to modify
+     * @param attributeId ID of the attribute to modify
+     * @param attributeType Data type of the attribute
+     * @param attributeValue Value of the attribute
+     */
     void setPointAttribute(String pointId, String attributeId, String attributeType, String attributeValue){
         // start transaction
-        startTransaction("", "Set point " + attributeId);
+        startTransaction(_currentMissionId, "Set point " + attributeId);
 
         // set coordinate
         MsnSvrOuterClass.AttributeRequest request = getAttributeRequest(getPointId(pointId),
+                attributeId, attributeType, attributeValue);
+
+        MsnSvrOuterClass.AttributeInfoList response = null;
+        try {
+            IMsnSvrClient client = getRpcClient();
+            response = client.SetAttributes(request);
+        } catch (Exception e) {
+            logger.log(Level.WARNING,"Add Failed to set data - ", e);
+        }
+
+        // end transaction
+        endTransaction();
+
+        if(response != null)
+        {
+            // success
+        }
+    }
+
+    /***
+     * Sets an attribute's value on a route point.
+     * @param pointId ID of the point to modify
+     * @param attributeId ID of the attribute to modify
+     * @param attributeType Data type of the attribute
+     * @param attributeValue Value of the attribute
+     */
+    void setEventAttribute(String pointId, String eventId, String attributeId, String attributeType, String attributeValue){
+        // start transaction
+        startTransaction(_currentMissionId, "Set point " + attributeId);
+
+        // set coordinate
+        MsnSvrOuterClass.AttributeRequest request = getAttributeRequest(getEventId(pointId, eventId),
                 attributeId, attributeType, attributeValue);
 
         MsnSvrOuterClass.AttributeInfoList response = null;
@@ -331,9 +402,25 @@ public class Samples {
         setPointAttribute(pointId, "Coordinate" , "MP.Core.Navigation.Coordinate", coordinate);
     }
 
+    public void setPointTypeToHover(String pointId) {
+        setPointAttribute(pointId,PropertyPrefix + "PointType", "MP.MissionEditor.PointUsageType", "RotaryWingDelay");
+    }
+
+    public void setPointTypeToNormalTurn(String pointId) {
+        setPointAttribute(pointId,PropertyPrefix + "PointType", "MP.MissionEditor.PointUsageType", "Turn");
+    }
+
+    public void setHoverDuration(String pointId, String hoverEventId, String duration) {
+        // e.g. 5 minutes would be:  00+05+00
+        setEventAttribute(pointId,hoverEventId, PropertyPrefix + "Time", "MP.Core.Units.TimeDelta", duration);
+    }
+
+    public void setHoverHeight(String pointId, String hoverEventId, String heightAgl) {
+        // e.g. 50 feet would be: 50A
+        setEventAttribute(pointId, hoverEventId,"HoverHeightEvent", "MP.Core.Weather.AltitudeAGL", heightAgl);
+    }
+
     String getCalculatedPointId(String pointId){
-
-
         // Build child request
         MsnSvrOuterClass.ChildRequest.Builder bldr = MsnSvrOuterClass.ChildRequest.newBuilder();
         bldr.setClient(getCallId())
@@ -364,9 +451,8 @@ public class Samples {
     }
 
     /***
-     * @param pointId
+     * @param pointId ID of point whose event to retrieve
      * @return Event ID
-     *
      */
     String getEventtId(String pointId){
 
@@ -404,7 +490,7 @@ public class Samples {
         return getSegmentAttribute("SegmentCalcState");
     }
 
-    public void BeginCalculation() throws Exception {
+    public void beginCalculation() throws Exception {
         // Don't start a calculation unless
         //  the status is not calculated
         String status = getSegmentCalculationState();
@@ -437,8 +523,7 @@ public class Samples {
     }
 
     String getPointAttribute(String pointId, String attributeId){
-        String result = "";
-        // set coordinate
+
         MsnSvrOuterClass.AttributeRequest request = getAttributeRequest(getPointId(pointId),
                 attributeId , "", "");
 
@@ -450,19 +535,12 @@ public class Samples {
             logger.log(Level.WARNING,"Add Failed to read data - ", e);
         }
 
-        if(response != null)
-        { // there should only be one entry
-            for (MsnSvrOuterClass.AttributeInfo info : response.getAttributesList()) {
-                if(info.getName().equals(attributeId))
-                    result = info.getValue();
-            }
-        }
-        return result;
+        return getAttributeValue(response, attributeId);
     }
 
     String getCalcPointAttribute(String pointId, String calcPointId, String attributeId){
-        String result = "";
-        // set coordinate
+
+        // get request
         MsnSvrOuterClass.AttributeRequest request = getAttributeRequest(getCalculatedPointId(pointId, calcPointId),
                 attributeId , "", "");
 
@@ -474,19 +552,12 @@ public class Samples {
             logger.log(Level.WARNING,"Add Failed to read data - ", e);
         }
 
-        if(response != null)
-        { // there should only be one entry
-            for (MsnSvrOuterClass.AttributeInfo info : response.getAttributesList()) {
-                if(info.getName().equals(attributeId))
-                    result = info.getValue();
-            }
-        }
-        return result;
+        return getAttributeValue(response, attributeId);
     }
 
     String getEventAttribute(String pointId, String eventId, String attributeId){
-        String result = "";
-        // set coordinate
+
+        // set value
         MsnSvrOuterClass.AttributeRequest request = getAttributeRequest(getEventId(pointId, eventId),
                 attributeId , "", "");
 
@@ -498,19 +569,12 @@ public class Samples {
             logger.log(Level.WARNING,"Add Failed to read data - ", e);
         }
 
-        if(response != null)
-        { // there should only be one entry
-            for (MsnSvrOuterClass.AttributeInfo info : response.getAttributesList()) {
-                if(info.getName().equals(attributeId))
-                    result = info.getValue();
-            }
-        }
-        return result;
+        return getAttributeValue(response, attributeId);
     }
 
     String getSegmentAttribute(String attributeId){
-        String result = "";
-        // set coordinate
+
+        // get request
         MsnSvrOuterClass.AttributeRequest request = getAttributeRequest(getSegmentAsParentId(),
                 attributeId , "", "");
 
@@ -522,19 +586,18 @@ public class Samples {
             logger.log(Level.WARNING,"Add Failed to read data - ", e);
         }
 
-        if(response != null)
-        { // there should only be one entry
-            for (MsnSvrOuterClass.AttributeInfo info : response.getAttributesList()) {
-                if(info.getName().equals("Coordinate"))
-                    result = info.getValue();
-            }
-        }
-        return result;
+        return getAttributeValue(response, attributeId);
     }
 
+    /***
+     * Reads an attribute value
+     * @param attributeId ID of the attribute to read
+     * @return attribute value or null
+     * @implNote Data type is removed from the value
+     */
     String getRouteAttribute(String attributeId){
-        String result = "";
-        // set coordinate
+
+        // get request
         MsnSvrOuterClass.AttributeRequest request = getAttributeRequest(getRouteAsParentId(_currentMissionId, _currentRouteId),
                 attributeId , "", "");
 
@@ -546,18 +609,156 @@ public class Samples {
             logger.log(Level.WARNING,"Add Failed to read data - ", e);
         }
 
+        return getAttributeValue(response, attributeId);
+    }
+
+    String getAttributeValue(MsnSvrOuterClass.AttributeInfoList response, String attributeId)
+    {
+        String result = "";
         if(response != null)
         { // there should only be one entry
             for (MsnSvrOuterClass.AttributeInfo info : response.getAttributesList()) {
-                if(info.getName().equals("Coordinate"))
+                if(info.getName().equals(attributeId)) {
                     result = info.getValue();
+                    int valueIndex = result.indexOf(';') + 1;
+                    if(valueIndex > 0 && valueIndex < result.length())
+                        result = result.substring(valueIndex);
+                }
             }
         }
         return result;
     }
 
+    /***
+     * Reads an attribute value
+     * @param attributeId ID of the attribute to read
+     * @return attribute value or null
+     * @implNote Data type is removed from the value
+     */
+    String getMissionAttribute(String attributeId){
+
+        MsnSvrOuterClass.AttributeRequest request = getAttributeRequest(getMissionAsParentId(_currentMissionId),
+                attributeId , "", "");
+
+        MsnSvrOuterClass.AttributeInfoList response = null;
+        try {
+            IMsnSvrClient client = getRpcClient();
+            response = client.GetAttributes(request);
+        } catch (Exception e) {
+            logger.log(Level.WARNING,"Add Failed to read data - ", e);
+        }
+
+        return getAttributeValue(response, attributeId);
+    }
+
+    public String getHoverDuration(String pointId, String hoverEventId) {
+        return getEventAttribute(pointId, hoverEventId,PropertyPrefix + "Time");
+    }
+
+    public String getHoverHeight(String pointId, String hoverEventId) {
+        return getEventAttribute(pointId, hoverEventId,"HoverHeightEvent");
+    }
+
     String getPointCoordinate(String pointId){
         return getPointAttribute(pointId, "Coordinate");
+    }
+
+    String getPointElevation(String pointId){
+        return getPointAttribute(pointId, "Elevation");
+    }
+
+    /***
+     * Gets name, or fix ID, of a route point
+     * @param pointId ID of the point whose name to retrieve
+     * @return Name or null
+     */
+    String getPointName(String pointId){
+        return getPointAttribute(pointId, "PtNameFix");
+    }
+
+    /***
+     * Gets the order of a route point in a route segment. First point is number 1.
+     * @param pointId ID of the point whose number to retrieve
+     * @return Number or null
+     * @apiNote Number is not required to be an integer, but normally is.
+     */
+    String getPointNumber(String pointId){
+        return getPointAttribute(pointId, "PtNum");
+    }
+
+    /***
+     * Gets description of a route point
+     * @param pointId ID of the point whose description to retrieve
+     * @return Description or null
+     */
+    String getPointDescription(String pointId){
+        return getPointAttribute(pointId, "PtDesc");
+    }
+
+    /***
+     * Gets point type
+     * @param pointId ID of the point whose point type to retrieve
+     * @return Point type
+     */
+    public String getPointType(String pointId) {
+        return getPointAttribute(pointId, PropertyPrefix + "PointType");
+    }
+
+    /***
+     * Gets XPlan representation of point type
+     * @param pointId ID of the point whose point type to retrieve
+     * @return Point type
+     */
+    String getRawPointType(String pointId){
+        return getPointAttribute(pointId, "PtType");
+    }
+
+    /***
+     * Gets planned altitude of a route point
+     * @param pointId ID of the point whose altitude to retrieve
+     * @return Altitude or null
+     * @implNote Calculated altitude can differ from planned altitude.
+     */
+    String getPointPlannedAltitude(String pointId){
+        return getPointAttribute(pointId, "PlanAltitudeValue");
+    }
+
+    /***
+     * Gets magnetic variation of a route point
+     * @param pointId ID of the point whose altitude to retrieve
+     * @return Magnetic variation or null
+     */
+    String getPointMagVar(String pointId){
+        return getPointAttribute(pointId, "PtMagVar");
+    }
+
+    /***
+     * Gets airspeed of a route point
+     * @param pointId ID of the point whose altitude to retrieve
+     * @return Airspeed or null
+     */
+    String getPointAirspeed(String pointId){
+        return getPointAttribute(pointId, "AirspeedValue");
+    }
+
+    String getRouteName(){
+        return getRouteAttribute( "RouteName");
+    }
+
+    String getRouteCalculationState(){
+        return getRouteAttribute( "RouteCalcState");
+    }
+
+    String getCalculationMessages(){
+        return getMissionAttribute( "CalcStatus");
+    }
+
+    boolean getRouteNegativeFuelCalculationFlag(){
+        boolean result = false;
+        String value = getRouteAttribute( "NegativeFuelCalculationFlag");
+        if(value != null && !value.isEmpty())
+            result = Boolean.parseBoolean(value);
+        return result;
     }
 
     List<String> getAllAttributes(String pointId){
@@ -594,6 +795,14 @@ public class Samples {
         return builder.build();
     }
 
+    /***
+     * Creates an attribute request in order to modify an attribute's value
+     * @param parentId Parent ID for the object that owns the attribute
+     * @param attributeId ID of the attribute
+     * @param attributeType Data type of the attribute.
+     * @param attributeValue Value of the attribute
+     * @return New attribute request
+     */
     MsnSvrOuterClass.AttributeRequest getAttributeRequest(MsnSvrOuterClass.ParentId parentId, String attributeId, String attributeType, String attributeValue) {
         MsnSvrOuterClass.AttributeRequest.Builder builder = MsnSvrOuterClass.AttributeRequest.newBuilder();
         builder.setClient(_callerId);
@@ -617,19 +826,29 @@ public class Samples {
                 assemblyName = "MP.Mission.Data.Core7, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null";
             else if(attributeType.startsWith("MP.Geometry."))
                 assemblyName = "MP.Geometry3, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null";
-            aiBuilder.setTypeName(attributeType);
-            aiBuilder.setAssemblyName(assemblyName);
-            aiBuilder.setValue(CrossPlatformSerializer.serialize(attributeValue));
+            else if(attributeType.startsWith("MP.MissionEditor"))
+                assemblyName = "MP.MissionEditor7, Version=2.0.0.0, Culture=neutral, PublicKeyToken=null";
+            aiBuilder.setTypeName("");
+            aiBuilder.setAssemblyName("");
+            aiBuilder.setValue(attributeType + ", " + assemblyName +";" + attributeValue);
         }
         builder.addAttributes( aiBuilder.build() );
         return builder.build();
     }
 
+    /***
+     * Retrieves an ID that can be used as the parentId for a mission
+     * @return Parent ID
+     */
     MsnSvrOuterClass.ParentId getParentIdForMissions() {
         MsnSvrOuterClass.ParentId.Builder pidBuilder = MsnSvrOuterClass.ParentId.newBuilder();
         return pidBuilder.build();
     }
 
+    /***
+     * Retrieves a mission ID as a ParentId
+     * @return Parent ID
+     */
     MsnSvrOuterClass.ParentId getMissionAsParentId(String missionId) {
         MsnSvrOuterClass.ParentId.Builder pidBuilder = MsnSvrOuterClass.ParentId.newBuilder();
         pidBuilder.addIds(
@@ -641,6 +860,10 @@ public class Samples {
         return pidBuilder.build();
     }
 
+    /***
+     * Retrieves a route ID as a ParentId
+     * @return Parent ID
+     */
     MsnSvrOuterClass.ParentId getRouteAsParentId(String missionId, String routeId) {
         MsnSvrOuterClass.ParentId.Builder pidBuilder = MsnSvrOuterClass.ParentId.newBuilder();
         pidBuilder.addIds(
@@ -658,6 +881,10 @@ public class Samples {
         return pidBuilder.build();
     }
 
+    /***
+     * Retrieves a segment ID as a ParentId
+     * @return Parent ID
+     */
     MsnSvrOuterClass.ParentId getSegmentAsParentId() {
         MsnSvrOuterClass.ParentId.Builder pidBuilder = MsnSvrOuterClass.ParentId.newBuilder();
         pidBuilder.addIds(
@@ -732,6 +959,12 @@ public class Samples {
         );
         pidBuilder.addIds(
                 MsnSvrOuterClass.IdType.newBuilder()
+                        .setType(ModelType.RoutePoint.ordinal())
+                        .setId(pointId)
+                        .build()
+        );
+        pidBuilder.addIds(
+                MsnSvrOuterClass.IdType.newBuilder()
                         .setType(ModelType.CalculatedPointCollection.ordinal())
                         .setId(pointId)
                         .build()
@@ -757,6 +990,12 @@ public class Samples {
                 MsnSvrOuterClass.IdType.newBuilder()
                         .setType(ModelType.Segment.ordinal())
                         .setId(_currentSegmentId)
+                        .build()
+        );
+        pidBuilder.addIds(
+                MsnSvrOuterClass.IdType.newBuilder()
+                        .setType(ModelType.RoutePoint.ordinal())
+                        .setId(pointId)
                         .build()
         );
         pidBuilder.addIds(
@@ -796,6 +1035,12 @@ public class Samples {
         );
         pidBuilder.addIds(
                 MsnSvrOuterClass.IdType.newBuilder()
+                        .setType(ModelType.RoutePoint.ordinal())
+                        .setId(pointId)
+                        .build()
+        );
+        pidBuilder.addIds(
+                MsnSvrOuterClass.IdType.newBuilder()
                         .setType(ModelType.EventCollection.ordinal())
                         .setId(pointId)
                         .build()
@@ -821,6 +1066,12 @@ public class Samples {
                 MsnSvrOuterClass.IdType.newBuilder()
                         .setType(ModelType.Segment.ordinal())
                         .setId(_currentSegmentId)
+                        .build()
+        );
+        pidBuilder.addIds(
+                MsnSvrOuterClass.IdType.newBuilder()
+                        .setType(ModelType.RoutePoint.ordinal())
+                        .setId(pointId)
                         .build()
         );
         pidBuilder.addIds(
