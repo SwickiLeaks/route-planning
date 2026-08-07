@@ -21,10 +21,19 @@ export interface AddedPoint {
   altitudeFt?: number;
 }
 
-// Pulls the leading number out of the service's altitude string (e.g. "1500 A").
+const METERS_TO_FEET = 3.280839895;
+
+// Altitude comes back like "something;raw15.24 m Foot AGL": the value follows the
+// semicolon and is in meters. Parse the magnitude and convert to whole feet.
 const altitudeFeetFrom = (raw: string): number | undefined => {
-  const match = raw.match(/-?\d+(?:\.\d+)?/);
-  return match ? Number(match[0]) : undefined;
+  const value = raw.includes(';') ? raw.slice(raw.indexOf(';') + 1) : raw;
+  const match = value.match(/(-?\d+(?:\.\d+)?)\s*([a-zA-Z]+)?/);
+  if (!match) return undefined;
+  const magnitude = Number(match[1]);
+  if (!Number.isFinite(magnitude)) return undefined;
+  const unit = (match[2] ?? '').toLowerCase();
+  const feet = unit.startsWith('m') ? magnitude * METERS_TO_FEET : magnitude;
+  return Math.round(feet);
 };
 
 export interface MissionSession {
