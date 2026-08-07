@@ -158,7 +158,7 @@ const WaypointInfoCard = ({
         {leg ? (
           <>
             <Field label="Time" value={value(waypoint.id, CalcPointAttribute.LegTime) ?? PENDING} />
-            <Field label="Fuel" value={PENDING} color={colors.gold} />
+            <Field label="Fuel" value={value(waypoint.id, CalcPointAttribute.LegFuel) ?? PENDING} color={colors.gold} />
           </>
         ) : (
           isStart && <Box sx={{ fontSize: 10.5, letterSpacing: '0.05em', textTransform: 'uppercase', color: FAINT }}>Route start</Box>
