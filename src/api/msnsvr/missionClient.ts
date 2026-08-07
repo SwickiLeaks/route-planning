@@ -148,6 +148,9 @@ export class MissionClient {
     missionId: string,
     description: string,
   ): Promise<void> {
+    // A fresh (non-nested) transaction must never carry a stale id — e.g. one a
+    // calculation left behind — or the server rejects it. Clear before starting.
+    this.transactionId = "";
     const res = await this.client.transactionData({
       caller: this.callId(),
       missionId,
