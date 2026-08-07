@@ -45,25 +45,25 @@ const leadingNumber = (value: string): number | undefined => {
   return match ? Number(match[0]) : undefined;
 };
 
-// Seconds (possibly fractional) → "HH:MM:SS".
+// Seconds (possibly fractional) → "hh+mm+ss".
 const formatHMS = (value: string): string => {
   const seconds = leadingNumber(value);
   if (seconds == null) return value;
   const total = Math.max(0, Math.round(seconds));
   const pad = (n: number) => String(n).padStart(2, '0');
-  return `${pad(Math.floor(total / 3600))}:${pad(Math.floor((total % 3600) / 60))}:${pad(total % 60)}`;
+  return `${pad(Math.floor(total / 3600))}+${pad(Math.floor((total % 3600) / 60))}+${pad(total % 60)}`;
 };
 
-// Meters → nautical miles to a tenth: "12.3 NM".
+// Meters → nautical miles to a tenth: "12.3 nm".
 const formatNm = (value: string): string => {
   const meters = leadingNumber(value);
-  return meters == null ? value : `${(meters / 1852).toFixed(1)} NM`;
+  return meters == null ? value : `${(meters / 1852).toFixed(1)} nm`;
 };
 
-// Kilograms → pounds, rounded: "1,234 lb".
+// Kilograms → pounds, rounded: "1,234 lbs".
 const formatLbs = (value: string): string => {
   const kg = leadingNumber(value);
-  return kg == null ? value : `${Math.round(kg * 2.2046226).toLocaleString()} lb`;
+  return kg == null ? value : `${Math.round(kg * 2.2046226).toLocaleString()} lbs`;
 };
 
 // Per-attribute display formatting; attributes without an entry show as-is.
