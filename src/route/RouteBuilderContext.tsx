@@ -6,6 +6,7 @@ import {
   type ReactNode,
 } from 'react';
 import type { LatLng } from '@/types/proto';
+import { useMissionSession } from '@/api/msnsvr/MissionSessionContext';
 import type {
   ActionParams,
   BuilderRoute,
@@ -26,7 +27,7 @@ interface State {
 }
 
 type Action =
-  | { type: 'addWaypoint'; position: LatLng; name?: string; altitudeFt?: number }
+  | { type: 'addWaypoint'; id: string; position: LatLng; name?: string; altitudeFt?: number }
   | { type: 'removeWaypoint'; id: string }
   | { type: 'moveWaypoint'; from: number; to: number }
   | { type: 'updateWaypoint'; id: string; patch: Partial<BuilderWaypoint> }
@@ -58,7 +59,7 @@ const reducer = (state: State, action: Action): State => {
   switch (action.type) {
     case 'addWaypoint': {
       const wp: BuilderWaypoint = {
-        id: uid('wp'),
+        id: action.id,
         name:
           action.name?.trim() ||
           `${action.position.lat.toFixed(3)}, ${action.position.lng.toFixed(3)}`,
@@ -178,10 +179,18 @@ export const RouteBuilderProvider = ({
     placing: false,
   });
 
+  const { addPoint } = useMissionSession();
+
   const actions = useMemo(
     () => ({
-      addWaypoint: (position: LatLng, name?: string, altitudeFt?: number) =>
-        dispatch({ type: 'addWaypoint', position, name, altitudeFt }),
+      addWaypoint: (position: LatLng, name?: string, altitudeFt?: number) => {
+        const id = uid('wp');
+        dispatch({ type: 'addWaypoint', id, position, name, altitudeFt });
+        // Mirror the add to MsnSvr and record the backend-assigned point GUID.
+        addPoint()
+          .then((serverId) => dispatch({ type: 'updateWaypoint', id, patch: { serverId } }))
+          .catch((e) => console.error('[msnsvr] addPointToCurrentRoute failed', e));
+      },
       removeWaypoint: (id: string) => dispatch({ type: 'removeWaypoint', id }),
       moveWaypoint: (from: number, to: number) => dispatch({ type: 'moveWaypoint', from, to }),
       updateWaypoint: (id: string, patch: Partial<BuilderWaypoint>) =>
@@ -195,7 +204,7 @@ export const RouteBuilderProvider = ({
       removeAction: (waypointId: string, actionId: string) =>
         dispatch({ type: 'removeAction', waypointId, actionId }),
     }),
-    [],
+    [addPoint],
   );
 
   const value = useMemo<RouteBuilderValue>(

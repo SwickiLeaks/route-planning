@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useMissionSession, useMsnHandshake } from "@/api/hooks";
+import { MissionSessionProvider, useMsnHandshake } from "@/api/hooks";
 import ControlBar from "@/components/controls/ControlBar";
 import MapView from "@/components/map/MapView";
 import RouteHud from "@/components/hud/RouteHud";
@@ -44,11 +44,7 @@ const DashboardContent = () => {
 // Top-level dashboard: seeds the editable route and mounts the builder.
 const Dashboard = () => {
   const { data: routes } = useRoutes();
-  const handshakeResult = useMsnHandshake();
-  console.log(handshakeResult.data);
-
-  // Create the demo's mission + route on startup (see samples.java flow).
-  useMissionSession();
+  useMsnHandshake();
 
   // Start with an empty route; the user builds it by entering airport codes.
   const seed = useMemo<BuilderRoute>(() => {
@@ -56,12 +52,16 @@ const Dashboard = () => {
     return { id: first?.id ?? 'route', name: first?.name ?? 'New Route', waypoints: [] };
   }, [routes]);
 
+  // MsnSvr session (mission + route) wraps the builder so waypoint adds can
+  // mirror to the backend and record their assigned point GUIDs.
   return (
-    <RouteBuilderProvider initialRoute={seed}>
-      <RouteTabularProvider>
-        <DashboardContent />
-      </RouteTabularProvider>
-    </RouteBuilderProvider>
+    <MissionSessionProvider>
+      <RouteBuilderProvider initialRoute={seed}>
+        <RouteTabularProvider>
+          <DashboardContent />
+        </RouteTabularProvider>
+      </RouteBuilderProvider>
+    </MissionSessionProvider>
   );
 };
 

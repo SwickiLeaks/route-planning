@@ -16,6 +16,8 @@ export interface WaypointAction {
 
 export interface BuilderWaypoint extends Waypoint {
   actions?: WaypointAction[];
+  /** Backend-assigned RoutePoint GUID, set once synced to MsnSvr. */
+  serverId?: string;
 }
 
 export interface BuilderRoute extends Route {
