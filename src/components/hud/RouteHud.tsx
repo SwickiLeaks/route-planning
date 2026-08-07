@@ -104,9 +104,7 @@ const RouteHud = ({ route, calc, calculating = false, faded = false }: RouteHudP
           // overflow / scrollbar) while still animating open and closed.
           gridTemplateRows: collapsed ? '0fr' : '1fr',
           opacity: collapsed ? 0 : 1,
-          // Stay click-through across the full width; only the content boxes below
-          // opt back into pointer events, so the empty band doesn't block the map.
-          pointerEvents: 'none',
+          pointerEvents: faded || collapsed ? 'none' : 'auto',
           transition: 'grid-template-rows 380ms cubic-bezier(0.22, 1, 0.36, 1), opacity 260ms ease',
         }}
       >
@@ -137,7 +135,7 @@ const RouteHud = ({ route, calc, calculating = false, faded = false }: RouteHudP
           </Box>
         )}
 
-        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', justifyContent: 'center', pointerEvents: faded || collapsed ? 'none' : 'auto', ...dim }}>
+        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', justifyContent: 'center', ...dim }}>
           <MetricTile label="Distance" value={fmtNm(t.distanceNm)} unit="nm" />
           <MetricTile label="Route Time" value={fmtHrMin(t.routeTimeMin)} unit="ete" accent={colors.accent} />
           <MetricTile label="Fuel Burn" value={fmtLb(t.routeFuelLb)} unit="lb" accent={colors.gold} />
@@ -145,7 +143,7 @@ const RouteHud = ({ route, calc, calculating = false, faded = false }: RouteHudP
           <MetricTile label="Avg Flow" value={fmtLb(t.avgFuelFlowLbHr)} unit="lb/hr" />
         </Box>
 
-        <Box sx={{ ...glassPane, width: 'fit-content', maxWidth: '100%', px: 1.5, py: 1.25, pointerEvents: faded || collapsed ? 'none' : 'auto', ...dim }}>
+        <Box sx={{ ...glassPane, width: '100%', px: 1.5, py: 1.25, ...dim }}>
           {route.waypoints.length === 0 ? (
             <Box sx={{ fontSize: 12, color: MUTED, textAlign: 'center', py: '4px' }}>
               Add a waypoint to begin building the route.

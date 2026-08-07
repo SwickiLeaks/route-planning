@@ -1,5 +1,5 @@
 {
-  "name": "helicopter-tour",
+  "name": "route-planning-demo",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -23,9 +23,11 @@
     "@emotion/styled": "^11.14.1",
     "@mui/icons-material": "^9.2.0",
     "@mui/material": "^9.2.0",
+    "@mui/x-date-pickers": "^9.10.1",
     "@protomaps/basemaps": "^5.7.2",
     "@tanstack/react-query": "^5.101.4",
     "maplibre-gl": "^5.24.0",
+    "material-react-table": "3.2.1",
     "pmtiles": "^4.4.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",

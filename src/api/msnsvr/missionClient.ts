@@ -32,7 +32,7 @@ export const ModelType = {
 
 // TransactionRequest.request_type codes (TransactionAction ordinals).
 export const TransactionAction = {
-  MetaData: 0,
+  Metadata: 0,
   Start: 1,
   Commit: 2,
   Rollback: 3,
@@ -70,15 +70,15 @@ const DEFAULT_TIMEOUT_MS = 5000;
 // The CLR assembly an attribute type belongs to, keyed by its namespace prefix.
 const assemblyNameFor = (attributeType: string): string => {
   if (attributeType.startsWith("MP.Core."))
-    return "MP.Core4, Version=4.0.0.0, Culture=neutral, PublicKeyToken=null;";
+    return "MP.Core4, Version=4.0.0.0, Culture=neutral, PublicKeyToken=null";
   if (attributeType.startsWith("System."))
-    return "netstandard, Version=2.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51;";
+    return "netstandard, Version=2.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51";
   if (attributeType.startsWith("MP.Vehicle."))
-    return "MP.Vehicle.Interfaces4, Version=4.0.0.0, Culture=neutral, PublicKeyToken=null;";
+    return "MP.Vehicle.Interfaces4, Version=4.0.0.0, Culture=neutral, PublicKeyToken=null";
   if (attributeType.startsWith("MP.Mission.Data."))
-    return "MP.Mission.Data.Core7, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null;";
+    return "MP.Mission.Data.Core7, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null";
   if (attributeType.startsWith("MP.Geometry."))
-    return "MP.Geometry3, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null;";
+    return "MP.Geometry3, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null";
   return "";
 };
 
@@ -110,7 +110,7 @@ export class MissionClient {
   }
 
   // Connectivity check; returns the server's reported State.
-  async handshake(appId = "demo"): Promise<string> {
+  async handshake(appId = "handshake"): Promise<string> {
     const res = await this.client.handshake({ id: appId });
     return res.state;
   }
@@ -137,6 +137,7 @@ export class MissionClient {
       requestType: TransactionAction.Start,
       timeoutMill: this.timeoutMs,
     });
+    console.log("Testing StartTransaction Response: ", res);
     this.activeMissionId = missionId;
     this.transactionId = res.caller?.transactionId ?? "";
   }
@@ -147,7 +148,7 @@ export class MissionClient {
       caller: this.callId(),
       missionId: this.activeMissionId,
       name: "",
-      requestType: TransactionAction.Commit,
+      requestType: TransactionAction.Start,
       timeoutMill: this.timeoutMs,
     });
     this.activeMissionId = "";
@@ -172,7 +173,9 @@ export class MissionClient {
 
   // Creates a route under the mission and resolves its default segment id.
   async addRoute(missionId: string): Promise<string> {
-    await this.startTransaction(missionId, "Add route");
+    console.log("Before StartTransaction ID: ", this.transactionId);
+    await this.startTransaction("", "Add route");
+    console.log("After StartTransaction ID: ", this.transactionId);
     try {
       const res = await this.client.addChild({
         client: this.callId(),
@@ -211,7 +214,7 @@ export class MissionClient {
 
   // Inserts a route point at `index`; returns the new point id.
   async insertPointToCurrentRoute(index: number): Promise<string> {
-    await this.startTransaction(this.currentMissionId, "Add route point");
+    await this.startTransaction("", "Add route point");
     try {
       const res = await this.client.addChild({
         client: this.callId(),
@@ -231,20 +234,8 @@ export class MissionClient {
     attributeType: string,
     attributeValue: string | null,
   ): Promise<void> {
-    await this.startTransaction(
-      this.currentMissionId,
-      `Set point ${attributeId}`,
-    );
+    await this.startTransaction("", `Set point ${attributeId}`);
     try {
-      console.log(
-        "Attribute Request: ",
-        this.attributeRequest(
-          this.pointId(pointId),
-          attributeId,
-          attributeType,
-          attributeValue,
-        ),
-      );
       await this.client.setAttributes(
         this.attributeRequest(
           this.pointId(pointId),
@@ -301,7 +292,6 @@ export class MissionClient {
   // Triggers a route calculation unless one is already running.
   async beginCalculation(): Promise<void> {
     const status = await this.getSegmentCalculationState();
-    console.log("Beging Calculation Status: ", status);
     if (status === "Calculating") return;
     // Empty description on purpose — a named transaction becomes undoable, and
     // calculations cannot be undone. The server owns ending this transaction.
@@ -329,7 +319,6 @@ export class MissionClient {
       if (signal?.aborted)
         throw signal.reason ?? new Error("Calculation wait aborted");
       const status = await this.getSegmentCalculationState();
-      console.log("Calculate And Wait Status: ", status);
       if (isComplete(status)) return status;
       if (Date.now() - startedAt > timeoutMs) {
         throw new Error(
@@ -352,7 +341,7 @@ export class MissionClient {
     attributeId: string,
   ): Promise<string> {
     const res = await this.client.getAttributes(
-      this.attributeRequest(this.pointId(pointId), attributeId, "", null),
+      this.attributeRequest(this.pointId(pointId), attributeId, "", ""),
     );
     return readAttribute(res, attributeId);
   }
@@ -383,7 +372,7 @@ export class MissionClient {
         this.eventId(pointId, eventId),
         attributeId,
         "",
-        null,
+        "",
       ),
     );
     return readAttribute(res, attributeId);
@@ -391,7 +380,7 @@ export class MissionClient {
 
   async getSegmentAttribute(attributeId: string): Promise<string> {
     const res = await this.client.getAttributes(
-      this.attributeRequest(this.segmentAsParentId(), attributeId, "", null),
+      this.attributeRequest(this.segmentAsParentId(), attributeId, "", ""),
     );
     return readAttribute(res, attributeId);
   }
@@ -453,23 +442,12 @@ export class MissionClient {
   ): AttributeRequestInit {
     const attribute =
       value === null
-        ? {
-            name: attributeId,
-            value: "",
-            isNull: true,
-            typeName: "",
-            assemblyName: "",
-          }
+        ? { name: attributeId, isNull: true, value: "" }
         : {
             name: attributeId,
-            value: serializeValue(
-              attributeType +
-                ", " +
-                [assemblyNameFor(attributeType), value].join(""),
-            ),
-            isNull: false,
-            typeName: "",
-            assemblyName: "",
+            typeName: attributeType,
+            assemblyName: assemblyNameFor(attributeType),
+            value: serializeValue(value),
           };
     return { client: this.callId(), parent, attributes: [attribute] };
   }
@@ -580,5 +558,3 @@ const delay = (ms: number, signal?: AbortSignal): Promise<void> =>
 
 // Shared demo instance — one mission/route session for the app.
 export const missionClient = new MissionClient();
-
-ghp_bKmuk6nU3hrJN1j3GX3fXv1W2xOQ3636HbGa

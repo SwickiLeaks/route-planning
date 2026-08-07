@@ -1,12 +1,16 @@
 import { useMemo, useState } from "react";
-import { useMissionSession, useMsnHandshake } from "@/api/hooks";
+import { useMsnHandshake } from "@/api/hooks";
 import ControlBar from "@/components/controls/ControlBar";
 import MapView from "@/components/map/MapView";
 import RouteHud from "@/components/hud/RouteHud";
 import { useRoutes } from "@/hooks";
 import { useRouteCalculation } from "@/calc/useRouteCalculation";
-import { RouteBuilderProvider, useRouteBuilder } from "@/route/RouteBuilderContext";
+import {
+  RouteBuilderProvider,
+  useRouteBuilder,
+} from "@/route/RouteBuilderContext";
 import type { BuilderRoute } from "@/route/routeBuilderTypes";
+import { RouteTabularProvider } from "@/route/RouteTabularContext";
 
 // Reads the editable route and drives the map and HUD off it.
 const DashboardContent = () => {
@@ -47,17 +51,23 @@ const Dashboard = () => {
   console.log(handshakeResult.data);
 
   // Create the demo's mission + route on startup (see samples.java flow).
-  useMissionSession();
+  // useMissionSession();
 
   // Start with an empty route; the user builds it by entering airport codes.
   const seed = useMemo<BuilderRoute>(() => {
     const first = routes[0];
-    return { id: first?.id ?? 'route', name: first?.name ?? 'New Route', waypoints: [] };
+    return {
+      id: first?.id ?? "route",
+      name: first?.name ?? "New Route",
+      waypoints: [],
+    };
   }, [routes]);
 
   return (
     <RouteBuilderProvider initialRoute={seed}>
-      <DashboardContent />
+      <RouteTabularProvider>
+        <DashboardContent />
+      </RouteTabularProvider>
     </RouteBuilderProvider>
   );
 };

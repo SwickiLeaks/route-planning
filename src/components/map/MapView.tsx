@@ -85,7 +85,6 @@ const MapView = ({
         maxBounds={MAX_BOUNDS}
         dragRotate={false}
         touchZoomRotate={false}
-        doubleClickZoom={false}
         onError={handleError}
         cursor={placing ? 'crosshair' : dragging ? 'grabbing' : 'grab'}
         onDragStart={() => setDragging(true)}
