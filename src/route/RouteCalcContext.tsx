@@ -39,6 +39,17 @@ const displayValue = (raw: string): string => {
   return (idx >= 0 ? raw.slice(idx + 1) : raw).trim().replace(/^raw/i, '');
 };
 
+// A decimal count of seconds ("123.456789 sec") shown to a tenth: "123.5 sec".
+const formatSeconds = (value: string): string => {
+  const match = value.match(/-?\d+(?:\.\d+)?/);
+  return match ? `${Number(match[0]).toFixed(1)} sec` : value;
+};
+
+// Per-attribute display formatting; attributes without an entry show as-is.
+const FORMATTERS: Record<string, (value: string) => string> = {
+  [CalcPointAttribute.LegTime]: formatSeconds,
+};
+
 // Runs a backend calculation when the route settles and exposes the results.
 export const RouteCalcProvider = ({ children }: { children: ReactNode }) => {
   const { route } = useRouteBuilder();
@@ -93,7 +104,9 @@ export const RouteCalcProvider = ({ children }: { children: ReactNode }) => {
     (waypointId: string, attributeId: string): string | undefined => {
       const raw = result.points[waypointId]?.[attributeId];
       if (!raw) return undefined;
-      return displayValue(raw) || undefined;
+      const stripped = displayValue(raw);
+      if (!stripped) return undefined;
+      return (FORMATTERS[attributeId] ?? ((v) => v))(stripped);
     },
     [result],
   );
