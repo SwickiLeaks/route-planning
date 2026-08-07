@@ -39,16 +39,31 @@ const displayValue = (raw: string): string => {
   return (idx >= 0 ? raw.slice(idx + 1) : raw).trim().replace(/^raw/i, '');
 };
 
-// Renders the leading decimal to a tenth with a unit: "123.456 …" → "123.5 sec".
-const fixedWithUnit = (unit: string) => (value: string): string => {
+// Pulls the leading number out of a "123.456 …" value.
+const leadingNumber = (value: string): number | undefined => {
   const match = value.match(/-?\d+(?:\.\d+)?/);
-  return match ? `${Number(match[0]).toFixed(1)} ${unit}` : value;
+  return match ? Number(match[0]) : undefined;
+};
+
+// Seconds (possibly fractional) → "HH:MM:SS".
+const formatHMS = (value: string): string => {
+  const seconds = leadingNumber(value);
+  if (seconds == null) return value;
+  const total = Math.max(0, Math.round(seconds));
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${pad(Math.floor(total / 3600))}:${pad(Math.floor((total % 3600) / 60))}:${pad(total % 60)}`;
+};
+
+// Meters → nautical miles to a tenth: "12.3 NM".
+const formatNm = (value: string): string => {
+  const meters = leadingNumber(value);
+  return meters == null ? value : `${(meters / 1852).toFixed(1)} NM`;
 };
 
 // Per-attribute display formatting; attributes without an entry show as-is.
 const FORMATTERS: Record<string, (value: string) => string> = {
-  [CalcPointAttribute.LegTime]: fixedWithUnit('sec'),
-  [CalcPointAttribute.LegDist]: fixedWithUnit('m'), // service returns meters
+  [CalcPointAttribute.LegTime]: formatHMS, // service returns seconds
+  [CalcPointAttribute.LegDist]: formatNm, // service returns meters
 };
 
 // Runs a backend calculation when the route settles and exposes the results.
