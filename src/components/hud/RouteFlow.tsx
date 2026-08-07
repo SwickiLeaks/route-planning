@@ -5,7 +5,7 @@ import { colors } from '@/theme/tokens';
 import type { LegCalc, RouteCalculation } from '@/calc/types';
 import type { BuilderRoute, BuilderWaypoint, WaypointActionType } from '@/route/routeBuilderTypes';
 import { actionDef } from '@/route/actionCatalog';
-import { MONO, MUTED, FAINT, fmtLb, fmtMinSec, fmtNm } from '@/components/shared/hudStyle';
+import { MONO, MUTED, FAINT, PENDING } from '@/components/shared/hudStyle';
 
 // A small icon indicator for a waypoint action.
 const ActionPip = ({ type }: { type: WaypointActionType }) => {
@@ -83,7 +83,7 @@ const PointTile = ({
 
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px', px: '9px', pt: '5px' }}>
         <Box sx={{ fontFamily: MONO, fontSize: 10.5, color: MUTED }}>
-          {(waypoint.altitudeFt ?? 0).toLocaleString()}
+          {PENDING}
           <Box component="span" sx={{ color: FAINT, ml: '2px' }}>ft</Box>
         </Box>
         {active && (
@@ -97,9 +97,9 @@ const PointTile = ({
 
       {leg ? (
         <Box sx={{ mt: '5px', pt: '5px', px: '5px', pb: '6px', borderTop: '1px solid rgba(255,255,255,0.07)', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', alignItems: 'baseline' }}>
-          <Stat label="Time" value={fmtMinSec(leg.legTimeMin)} />
-          <Stat label="Dist" value={fmtNm(leg.distanceNm)} unit="nm" />
-          <Stat label="Fuel" value={fmtLb(leg.legFuelLb)} unit="lb" color={colors.gold} />
+          <Stat label="Time" value={PENDING} />
+          <Stat label="Dist" value={PENDING} unit="nm" />
+          <Stat label="Fuel" value={PENDING} unit="lb" color={colors.gold} />
         </Box>
       ) : (
         <Box sx={{ flex: 1, mt: '5px', pt: '5px', pb: '6px', borderTop: '1px solid rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', color: FAINT }}>

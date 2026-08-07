@@ -9,6 +9,9 @@ export const MONO =
 export const MUTED = 'rgba(231,227,218,0.6)';
 export const FAINT = 'rgba(231,227,218,0.4)';
 
+// Placeholder for a calculated value that isn't wired to the backend yet.
+export const PENDING = '—';
+
 export const PANEL_BORDER = '1px solid rgba(255,255,255,0.09)';
 
 // See-through glass for floating HUD panes.

@@ -5,7 +5,7 @@ import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import { colors } from '@/theme/tokens';
 import type { RouteCalculation } from '@/calc/types';
 import type { BuilderRoute } from '@/route/routeBuilderTypes';
-import { MUTED, glassPane, fmtHrMin, fmtLb, fmtNm, fuelStateColor } from '@/components/shared/hudStyle';
+import { MUTED, glassPane, PENDING } from '@/components/shared/hudStyle';
 import MetricTile from '@/components/hud/MetricTile';
 import RouteFlow from '@/components/hud/RouteFlow';
 
@@ -67,8 +67,6 @@ const HudHandle = ({
 // Bottom HUD: a cluster of glass panes layered over the map.
 const RouteHud = ({ route, calc, calculating = false, faded = false }: RouteHudProps) => {
   const [collapsed, setCollapsed] = useState(false);
-  const t = calc.totals;
-  const stateColor = fuelStateColor(t.fuelState);
 
   const dim = {
     opacity: calculating ? 0.55 : 1,
@@ -138,11 +136,11 @@ const RouteHud = ({ route, calc, calculating = false, faded = false }: RouteHudP
         )}
 
         <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', justifyContent: 'center', pointerEvents: faded || collapsed ? 'none' : 'auto', ...dim }}>
-          <MetricTile label="Distance" value={fmtNm(t.distanceNm)} unit="nm" />
-          <MetricTile label="Route Time" value={fmtHrMin(t.routeTimeMin)} unit="ete" accent={colors.accent} />
-          <MetricTile label="Fuel Burn" value={fmtLb(t.routeFuelLb)} unit="lb" accent={colors.gold} />
-          <MetricTile label="Remaining" value={fmtLb(t.remainingFuelLb)} unit="lb" accent={stateColor} />
-          <MetricTile label="Avg Flow" value={fmtLb(t.avgFuelFlowLbHr)} unit="lb/hr" />
+          <MetricTile label="Distance" value={PENDING} unit="nm" />
+          <MetricTile label="Route Time" value={PENDING} unit="ete" accent={colors.accent} />
+          <MetricTile label="Fuel Burn" value={PENDING} unit="lb" accent={colors.gold} />
+          <MetricTile label="Remaining" value={PENDING} unit="lb" />
+          <MetricTile label="Avg Flow" value={PENDING} unit="lb/hr" />
         </Box>
 
         <Box sx={{ ...glassPane, width: 'fit-content', maxWidth: '100%', px: 1.5, py: 1.25, pointerEvents: faded || collapsed ? 'none' : 'auto', ...dim }}>

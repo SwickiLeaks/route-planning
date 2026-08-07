@@ -9,6 +9,8 @@ import {
   type ReactNode,
 } from 'react';
 import { missionClient } from '@/api/msnsvr/missionClient';
+import { toMsnSvrCoordinate } from '@/api/msnsvr/coordinates';
+import type { LatLng } from '@/types/proto';
 
 export type MissionSessionStatus = 'initializing' | 'ready' | 'error';
 
@@ -20,8 +22,8 @@ export interface MissionSession {
   status: MissionSessionStatus;
   error: unknown;
   ready: boolean;
-  /** Appends a route point on the backend and resolves with its GUID. */
-  addPoint: () => Promise<string>;
+  /** Appends a route point, sets its coordinate, and resolves with its GUID. */
+  addPoint: (position: LatLng) => Promise<string>;
 }
 
 const MissionSessionContext = createContext<MissionSession | null>(null);
@@ -58,12 +60,19 @@ export const MissionSessionProvider = ({ children }: { children: ReactNode }) =>
       });
   }, []);
 
-  const addPoint = useCallback(() => {
+  const addPoint = useCallback((position: LatLng) => {
     const run = queue.current
       .catch(() => {}) // isolate one op's failure from the next
       .then(async () => {
         await readyRef.current; // mission/route must exist first
-        return missionClient.addPointToCurrentRoute();
+        const id = await missionClient.addPointToCurrentRoute();
+        // Push the coordinate; keep the id even if this fails so the UI stays linked.
+        try {
+          await missionClient.setPointCoordinate(id, toMsnSvrCoordinate(position));
+        } catch (e) {
+          console.error('[msnsvr] setPointCoordinate failed', e);
+        }
+        return id;
       });
     queue.current = run;
     return run;
