@@ -324,10 +324,17 @@ export class MissionClient {
     // Empty description on purpose — a named transaction becomes undoable, and
     // calculations cannot be undone. The server owns ending this transaction.
     await this.startTransaction(this.currentMissionId, "");
-    await this.client.doAction({
-      client: this.callId("Calculate"),
-      parent: this.missionAsParentId(this.currentMissionId),
-    });
+    try {
+      await this.client.doAction({
+        client: this.callId("Calculate"),
+        parent: this.missionAsParentId(this.currentMissionId),
+      });
+    } finally {
+      // The server ends the calculation transaction; drop our local handle so
+      // later calls (e.g. adding another point) don't carry a stale id.
+      this.transactionId = "";
+      this.activeMissionId = "";
+    }
   }
 
   getSegmentCalculationState(): Promise<string> {
