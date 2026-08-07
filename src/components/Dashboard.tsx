@@ -6,6 +6,7 @@ import RouteHud from "@/components/hud/RouteHud";
 import { useRoutes } from "@/hooks";
 import { useRouteCalculation } from "@/calc/useRouteCalculation";
 import { RouteBuilderProvider, useRouteBuilder } from "@/route/RouteBuilderContext";
+import { RouteTabularProvider } from "@/route/RouteTabularContext";
 import type { BuilderRoute } from "@/route/routeBuilderTypes";
 
 // Reads the editable route and drives the map and HUD off it.
@@ -57,7 +58,9 @@ const Dashboard = () => {
 
   return (
     <RouteBuilderProvider initialRoute={seed}>
-      <DashboardContent />
+      <RouteTabularProvider>
+        <DashboardContent />
+      </RouteTabularProvider>
     </RouteBuilderProvider>
   );
 };

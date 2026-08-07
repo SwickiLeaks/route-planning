@@ -1,8 +1,10 @@
 import type { ReactElement, ReactNode } from 'react';
 import AddLocationAltIcon from '@mui/icons-material/AddLocationAlt';
 import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
+import StorageIcon from '@mui/icons-material/Storage';
 import WaypointCreatorPane from '@/components/builder/WaypointCreatorPane';
 import RouteManagerPane from '@/components/builder/RouteManagerPane';
+import { RouteTabularContainer } from '@/components/builder/route-tabular/route-tabular-container';
 
 export interface SidePanel {
   id: string;
@@ -25,5 +27,11 @@ export const SIDE_PANELS: SidePanel[] = [
     label: 'Routes',
     icon: <FormatListBulletedIcon fontSize="small" />,
     content: <RouteManagerPane />,
+  },
+  {
+    id: 'route-tabular',
+    label: 'Tabular',
+    icon: <StorageIcon fontSize="small" />,
+    content: <RouteTabularContainer />,
   },
 ];

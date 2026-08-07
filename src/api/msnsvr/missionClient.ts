@@ -580,5 +580,3 @@ const delay = (ms: number, signal?: AbortSignal): Promise<void> =>
 
 // Shared demo instance — one mission/route session for the app.
 export const missionClient = new MissionClient();
-
-ghp_bKmuk6nU3hrJN1j3GX3fXv1W2xOQ3636HbGa
