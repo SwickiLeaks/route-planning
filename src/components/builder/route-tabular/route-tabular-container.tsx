@@ -1,61 +1,30 @@
 import React from "react";
-import {
-  RouteTabularView,
-  type RouteTabularViewProps,
-} from "./route-tabular-view";
+import { RouteTabularView } from "./route-tabular-view";
 import { useRouteBuilder } from "@/route/RouteBuilderContext";
+import { useRouteCalc } from "@/route/RouteCalcContext";
+import { CalcPointAttribute } from "@/api/msnsvr/missionClient";
 import type { RouteTabularDataObject } from "@/interfaces/route-tabular-data-object";
-import { DEFAULT_AIRCRAFT, type LegCalc } from "@/calc/types";
-import { useRouteCalculation } from "@/calc/useRouteCalculation";
-import type { BuilderWaypoint } from "@/route/routeBuilderTypes";
-import {
-  convertFuelLbsToGal,
-  formatCourse,
-  formatDisplayDistance,
-  formatDisplayGal,
-  formatDisplaySpeed,
-  formatDisplayTime,
-} from "@/calc/utils";
+import { PENDING } from "@/components/shared/hudStyle";
 
 export function RouteTabularContainer(): React.JSX.Element {
   const { route, selectedWaypointId, selectWaypoint } = useRouteBuilder();
-  const calculatedResults = useRouteCalculation(route);
-  const newRows: RouteTabularViewProps["rows"] =
-    calculatedResults.data?.legs.map((legCalc: LegCalc) => {
-      const row: RouteTabularDataObject = {
-        id: legCalc.to.id,
-        code: legCalc.to.name,
-        timeEnroute: formatDisplayTime(legCalc.legTimeMin),
-        timeTotal: formatDisplayTime(legCalc.cumulativeTimeMin),
-        fuelEnroute: formatDisplayGal(convertFuelLbsToGal(legCalc.legFuelLb)),
-        fuelTotal: formatDisplayGal(
-          convertFuelLbsToGal(legCalc.cumulativeFuelLb),
-        ),
-        distanceEnroute: formatDisplayDistance(legCalc.distanceNm),
-        fuelRem: formatDisplayGal(convertFuelLbsToGal(legCalc.remainingFuelLb)),
-        grndSpd: formatDisplaySpeed(legCalc.groundSpeedKt),
-        trueCourse: formatCourse(legCalc.bearingDeg),
-      };
-      return row;
-    }) ?? [];
-  //Add first point data for visualization
-  const firstWaypoint: BuilderWaypoint | undefined = route.waypoints[0];
-  if (firstWaypoint) {
-    newRows.unshift({
-      id: firstWaypoint.id,
-      code: firstWaypoint.name,
-      timeEnroute: formatDisplayTime(0),
-      timeTotal: formatDisplayTime(0),
-      fuelEnroute: formatDisplayGal(0),
-      fuelTotal: formatDisplayGal(0),
-      distanceEnroute: formatDisplayDistance(0),
-      fuelRem: formatDisplayGal(
-        convertFuelLbsToGal(DEFAULT_AIRCRAFT.fuelCapacityLb),
-      ),
-      grndSpd: formatDisplaySpeed(0),
-      trueCourse: "----",
-    });
-  }
+  const { value } = useRouteCalc();
+
+  // Waypoint code and StateLegTime are wired; other columns stay blank until
+  // their data sources are hooked up.
+  const rows: RouteTabularDataObject[] = route.waypoints.map((wp) => ({
+    id: wp.id,
+    code: wp.name,
+    timeEnroute: value(wp.id, CalcPointAttribute.LegTime) ?? PENDING,
+    timeTotal: PENDING,
+    distanceEnroute: PENDING,
+    fuelEnroute: PENDING,
+    fuelTotal: PENDING,
+    fuelRem: PENDING,
+    grndSpd: PENDING,
+    trueCourse: PENDING,
+  }));
+
   return (
     <RouteTabularView
       columns={[
@@ -69,10 +38,10 @@ export function RouteTabularContainer(): React.JSX.Element {
         { header: "Ground Speed", id: "grndSpd" },
         { header: "True Course", id: "trueCourse" },
       ]}
-      rows={newRows}
+      rows={rows}
       selectedWaypointId={selectedWaypointId}
       setSelectedWaypointId={selectWaypoint}
-      isCalculating={calculatedResults.isCalculating}
+      isCalculating={false}
     />
   );
 }

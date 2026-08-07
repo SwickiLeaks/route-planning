@@ -5,6 +5,8 @@ import { colors } from '@/theme/tokens';
 import type { LegCalc, RouteCalculation } from '@/calc/types';
 import type { BuilderRoute, BuilderWaypoint, WaypointActionType } from '@/route/routeBuilderTypes';
 import { actionDef } from '@/route/actionCatalog';
+import { useRouteCalc } from '@/route/RouteCalcContext';
+import { CalcPointAttribute } from '@/api/msnsvr/missionClient';
 import { MONO, MUTED, FAINT, PENDING } from '@/components/shared/hudStyle';
 
 // A small icon indicator for a waypoint action.
@@ -47,11 +49,13 @@ const PointTile = ({
   index,
   isEndpoint,
   leg,
+  legTime,
 }: {
   waypoint: BuilderWaypoint;
   index: number;
   isEndpoint: boolean;
   leg?: LegCalc;
+  legTime?: string;
 }) => {
   const actions = waypoint.actions ?? [];
   const active = actions.length > 0;
@@ -97,7 +101,7 @@ const PointTile = ({
 
       {leg ? (
         <Box sx={{ mt: '5px', pt: '5px', px: '5px', pb: '6px', borderTop: '1px solid rgba(255,255,255,0.07)', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', alignItems: 'baseline' }}>
-          <Stat label="Time" value={PENDING} />
+          <Stat label="Time" value={legTime ?? PENDING} />
           <Stat label="Dist" value={PENDING} unit="nm" />
           <Stat label="Fuel" value={PENDING} unit="lb" color={colors.gold} />
         </Box>
@@ -120,6 +124,7 @@ const FlowArrow = () => (
 // Wrapping flow of combined point/leg tiles; each tile owns its inbound leg.
 const RouteFlow = ({ route, calc }: { route: BuilderRoute; calc: RouteCalculation }) => {
   const lastIndex = route.waypoints.length - 1;
+  const { value } = useRouteCalc();
 
   return (
     <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'stretch', justifyContent: 'flex-start', gap: '6px', rowGap: '8px' }}>
@@ -130,6 +135,7 @@ const RouteFlow = ({ route, calc }: { route: BuilderRoute; calc: RouteCalculatio
             index={i}
             isEndpoint={i === 0 || i === lastIndex}
             leg={calc.legs[i - 1]}
+            legTime={value(wp.id, CalcPointAttribute.LegTime)}
           />
           {i < lastIndex && <FlowArrow />}
         </Fragment>

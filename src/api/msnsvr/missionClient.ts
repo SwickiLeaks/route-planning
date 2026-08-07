@@ -63,6 +63,11 @@ export const PointAttribute = {
   Coordinate: { id: "Coordinate", type: "MP.Core.Navigation.Coordinate" },
 } as const;
 
+// Attributes read from a point's calculated result.
+export const CalcPointAttribute = {
+  LegTime: "StateLegTime", // elapsed time from the beginning of the leg
+} as const;
+
 const CLIENT_ID = "demo";
 const PROTOCOL_VERSION = "1.0.0.0";
 const DEFAULT_TIMEOUT_MS = 5000;
@@ -85,6 +90,18 @@ const assemblyNameFor = (attributeType: string): string => {
 // TODO: the reference client runs values through a CrossPlatformSerializer
 // before sending. Until that format is confirmed, pass the raw string through.
 const serializeValue = (value: string): string => value;
+
+// SegmentCalcState comes back as "<something>;<CalculationState>" (or ""). The
+// state after the last semicolon is what tells us whether it finished.
+export const parseCalcState = (raw: string): string => {
+  const idx = raw.lastIndexOf(";");
+  return (idx >= 0 ? raw.slice(idx + 1) : raw).trim();
+};
+
+// A settled, successful state — "Calculated", "CalculatedWithAlerts", … — but
+// not "NotCalculated" (starts with "Not") or an empty/in-progress value.
+export const isCalculatedState = (raw: string): boolean =>
+  parseCalcState(raw).startsWith("Calculated");
 
 type CallIdInit = MessageInitShape<typeof CallIdSchema>;
 type ParentIdInit = MessageInitShape<typeof ParentIdSchema>;
@@ -302,7 +319,7 @@ export class MissionClient {
   async beginCalculation(): Promise<void> {
     const status = await this.getSegmentCalculationState();
     console.log("Beging Calculation Status: ", status);
-    if (status === "Calculating") return;
+    if (parseCalcState(status) === "Calculating") return;
     // Empty description on purpose — a named transaction becomes undoable, and
     // calculations cannot be undone. The server owns ending this transaction.
     await this.startTransaction(this.currentMissionId, "");
@@ -320,9 +337,7 @@ export class MissionClient {
   // Throws on timeout or abort.
   async waitForCalculation(options: WaitOptions = {}): Promise<string> {
     const { intervalMs = 500, timeoutMs = 30_000, signal } = options;
-    const isComplete =
-      options.isComplete ??
-      ((s) => s !== "" && s !== CalculationStatus.Calculating);
+    const isComplete = options.isComplete ?? isCalculatedState;
     const startedAt = Date.now();
 
     for (;;) {
@@ -367,7 +382,7 @@ export class MissionClient {
         this.calculatedPointId(pointId, calcPointId),
         attributeId,
         "",
-        "",
+        null,
       ),
     );
     return readAttribute(res, attributeId);
@@ -425,6 +440,36 @@ export class MissionClient {
       child: { type: ModelType.CalculatedPoint },
     });
     return res.objects[res.objects.length - 1]?.id ?? "";
+  }
+
+  // Reads a calculated-result attribute for a route point, resolving its
+  // calculated-point id first. Empty string if the point hasn't been calculated.
+  async getPointCalcAttribute(
+    pointId: string,
+    attributeId: string,
+  ): Promise<string> {
+    const calcPointId = await this.getCalculatedPointId(pointId);
+    if (!calcPointId) return "";
+    return this.getCalcPointAttribute(pointId, calcPointId, attributeId);
+  }
+
+  // Reads several calculated attributes for a point, resolving its calculated
+  // point once. Empty object if the point has no calculated point (e.g. origin).
+  async getPointCalcAttributes(
+    pointId: string,
+    attributeIds: string[],
+  ): Promise<Record<string, string>> {
+    const calcPointId = await this.getCalculatedPointId(pointId);
+    if (!calcPointId) return {};
+    const values: Record<string, string> = {};
+    for (const attributeId of attributeIds) {
+      values[attributeId] = await this.getCalcPointAttribute(
+        pointId,
+        calcPointId,
+        attributeId,
+      );
+    }
+    return values;
   }
 
   // The first event (which holds the data) for a route point.

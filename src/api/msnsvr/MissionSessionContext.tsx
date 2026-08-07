@@ -46,6 +46,11 @@ export interface MissionSession {
   ready: boolean;
   /** Appends a route point, sets its coordinate, reads its planned altitude. */
   addPoint: (position: LatLng) => Promise<AddedPoint>;
+  /** Runs a calculation and returns the given attributes per point, keyed by point GUID. */
+  calculatePoints: (
+    pointIds: string[],
+    attributeIds: string[],
+  ) => Promise<Record<string, Record<string, string>>>;
 }
 
 const MissionSessionContext = createContext<MissionSession | null>(null);
@@ -107,9 +112,33 @@ export const MissionSessionProvider = ({ children }: { children: ReactNode }) =>
     return run;
   }, []);
 
+  const calculatePoints = useCallback(
+    (pointIds: string[], attributeIds: string[]): Promise<Record<string, Record<string, string>>> => {
+      const run = queue.current
+        .catch(() => {})
+        .then(async (): Promise<Record<string, Record<string, string>>> => {
+          await readyRef.current;
+          await missionClient.calculateAndWait();
+          const byPoint: Record<string, Record<string, string>> = {};
+          for (const pointId of pointIds) {
+            try {
+              const attrs = await missionClient.getPointCalcAttributes(pointId, attributeIds);
+              if (Object.keys(attrs).length) byPoint[pointId] = attrs;
+            } catch (e) {
+              console.error('[msnsvr] getPointCalcAttributes failed', e);
+            }
+          }
+          return byPoint;
+        });
+      queue.current = run;
+      return run;
+    },
+    [],
+  );
+
   const value = useMemo<MissionSession>(
-    () => ({ missionId, routeId, status, error, ready: status === 'ready', addPoint }),
-    [missionId, routeId, status, error, addPoint],
+    () => ({ missionId, routeId, status, error, ready: status === 'ready', addPoint, calculatePoints }),
+    [missionId, routeId, status, error, addPoint, calculatePoints],
   );
 
   return <MissionSessionContext.Provider value={value}>{children}</MissionSessionContext.Provider>;

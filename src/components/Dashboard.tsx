@@ -6,6 +6,7 @@ import RouteHud from "@/components/hud/RouteHud";
 import { useRoutes } from "@/hooks";
 import { useRouteCalculation } from "@/calc/useRouteCalculation";
 import { RouteBuilderProvider, useRouteBuilder } from "@/route/RouteBuilderContext";
+import { RouteCalcProvider } from "@/route/RouteCalcContext";
 import { RouteTabularProvider } from "@/route/RouteTabularContext";
 import type { BuilderRoute } from "@/route/routeBuilderTypes";
 
@@ -57,9 +58,11 @@ const Dashboard = () => {
   return (
     <MissionSessionProvider>
       <RouteBuilderProvider initialRoute={seed}>
-        <RouteTabularProvider>
-          <DashboardContent />
-        </RouteTabularProvider>
+        <RouteCalcProvider>
+          <RouteTabularProvider>
+            <DashboardContent />
+          </RouteTabularProvider>
+        </RouteCalcProvider>
       </RouteBuilderProvider>
     </MissionSessionProvider>
   );

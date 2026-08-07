@@ -12,6 +12,8 @@ import BoltIcon from '@mui/icons-material/Bolt';
 import { colors } from '@/theme/tokens';
 import { MONO, MUTED, FAINT, PENDING } from '@/components/shared/hudStyle';
 import { useRouteBuilder } from '@/route/RouteBuilderContext';
+import { useRouteCalc } from '@/route/RouteCalcContext';
+import { CalcPointAttribute } from '@/api/msnsvr/missionClient';
 import { actionDef } from '@/route/actionCatalog';
 import type { LegCalc } from '@/calc/types';
 import type { BuilderWaypoint } from '@/route/routeBuilderTypes';
@@ -144,6 +146,7 @@ const WaypointInfoCard = ({
   leg?: LegCalc;
 }) => {
   const [tab, setTab] = useState<Tab>('details');
+  const { value } = useRouteCalc();
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, px: '2px', pt: 1, mt: '2px', width: 260, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
@@ -154,7 +157,7 @@ const WaypointInfoCard = ({
         />
         {leg ? (
           <>
-            <Field label="Time" value={PENDING} />
+            <Field label="Time" value={value(waypoint.id, CalcPointAttribute.LegTime) ?? PENDING} />
             <Field label="Fuel" value={PENDING} color={colors.gold} />
           </>
         ) : (
