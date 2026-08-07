@@ -66,6 +66,7 @@ export const PointAttribute = {
 // Attributes read from a point's calculated result.
 export const CalcPointAttribute = {
   LegTime: "StateLegTime", // elapsed time from the beginning of the leg
+  LegDist: "StateLegDist", // cumulative distance from the beginning of the leg
 } as const;
 
 const CLIENT_ID = "demo";
