@@ -319,22 +319,36 @@ export class MissionClient {
     return { missionId, routeId };
   }
 
-  // Triggers a route calculation unless one is already running.
+  // Triggers a route calculation unless one is already running. The transaction
+  // stays open through the calculation; calculateAndWait commits it once settled.
   async beginCalculation(): Promise<void> {
     const status = await this.getSegmentCalculationState();
     console.log("Beging Calculation Status: ", status);
     if (parseCalcState(status) === "Calculating") return;
     // Empty description on purpose — a named transaction becomes undoable, and
-    // calculations cannot be undone. The server owns ending this transaction.
+    // calculations cannot be undone.
     await this.startTransaction(this.currentMissionId, "");
     try {
       await this.client.doAction({
         client: this.callId("Calculate"),
         parent: this.missionAsParentId(this.currentMissionId),
       });
-    } finally {
-      // The server ends the calculation transaction; drop our local handle so
-      // later calls (e.g. adding another point) don't carry a stale id.
+    } catch (e) {
+      // Submission failed — close the transaction so it can't block later work.
+      await this.endCalculationTransaction();
+      throw e;
+    }
+  }
+
+  // Commits the open calculation transaction so a later mutation for the same
+  // mission isn't rejected with "a transaction already exists". Tolerates the
+  // server having already closed it.
+  private async endCalculationTransaction(): Promise<void> {
+    if (!this.activeMissionId) return;
+    try {
+      await this.endTransaction();
+    } catch (e) {
+      console.error("[msnsvr] failed to end calculation transaction", e);
       this.transactionId = "";
       this.activeMissionId = "";
     }
@@ -369,7 +383,13 @@ export class MissionClient {
   // Starts a calculation and resolves once it finishes (ready for calc points).
   async calculateAndWait(options?: WaitOptions): Promise<string> {
     await this.beginCalculation();
-    return this.waitForCalculation(options);
+    try {
+      return await this.waitForCalculation(options);
+    } finally {
+      // Close the calculation transaction before returning so the next add can
+      // open its own transaction for this mission.
+      await this.endCalculationTransaction();
+    }
   }
 
   // Reads a single attribute value from a route point.
