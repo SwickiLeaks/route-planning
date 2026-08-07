@@ -89,8 +89,14 @@ const PointTile = ({
 
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px', px: '9px', pt: '5px' }}>
         <Box sx={{ fontFamily: MONO, fontSize: 10.5, color: MUTED }}>
-          {PENDING}
-          <Box component="span" sx={{ color: FAINT, ml: '2px' }}>ft</Box>
+          {waypoint.altitudeFt != null ? (
+            <>
+              {waypoint.altitudeFt.toLocaleString()}
+              <Box component="span" sx={{ color: FAINT, ml: '2px' }}>ft</Box>
+            </>
+          ) : (
+            PENDING
+          )}
         </Box>
         {active && (
           <Box sx={{ display: 'flex', gap: '3px' }}>
