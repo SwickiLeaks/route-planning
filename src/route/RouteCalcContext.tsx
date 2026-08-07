@@ -48,9 +48,12 @@ export const RouteCalcProvider = ({ children }: { children: ReactNode }) => {
   const runId = useRef(0);
 
   const waypoints = route.waypoints;
-  // Recalculate when the geometry, altitude, or backend ids change.
+  // Recalculate when a waypoint is added, removed, or edited (coordinate/altitude/
+  // backend id). Sorted so it's order-independent: pure re-ordering does NOT
+  // trigger a recalc — that gets its own backend handling later.
   const signature = waypoints
     .map((w) => `${w.id}:${w.serverId ?? ''}:${w.position.lat},${w.position.lng}:${w.altitudeFt ?? ''}`)
+    .sort()
     .join('|');
   // Need at least a leg, and every point mirrored to the backend.
   const allSynced = waypoints.length >= 2 && waypoints.every((w) => w.serverId);
