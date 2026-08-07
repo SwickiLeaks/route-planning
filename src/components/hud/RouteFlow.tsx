@@ -22,13 +22,12 @@ const ActionPip = ({ type }: { type: WaypointActionType }) => {
   );
 };
 
-// A centered label-over-value stat for a leg metric.
-const Stat = ({ label, value, unit, color = colors.white }: { label: string; value: string; unit?: string; color?: string }) => (
-  <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1px', minWidth: 0 }}>
-    <Box sx={{ fontSize: 9, letterSpacing: '0.04em', color: MUTED, textTransform: 'uppercase' }}>{label}</Box>
-    <Box sx={{ display: 'flex', alignItems: 'baseline', gap: '2px', fontFamily: MONO }}>
-      <Box sx={{ fontSize: 13, color, fontVariantNumeric: 'tabular-nums' }}>{value}</Box>
-      {unit && <Box sx={{ fontSize: 8.5, color: FAINT }}>{unit}</Box>}
+// A label→value row for a leg metric; value gets the full tile width.
+const LegRow = ({ label, value, color = colors.white }: { label: string; value: string; color?: string }) => (
+  <Box sx={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '10px' }}>
+    <Box sx={{ fontSize: 9.5, letterSpacing: '0.04em', color: MUTED, textTransform: 'uppercase' }}>{label}</Box>
+    <Box sx={{ fontFamily: MONO, fontSize: 12, color, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
+      {value}
     </Box>
   </Box>
 );
@@ -108,10 +107,10 @@ const PointTile = ({
       </Box>
 
       {leg ? (
-        <Box sx={{ mt: '5px', pt: '5px', px: '5px', pb: '6px', borderTop: '1px solid rgba(255,255,255,0.07)', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', alignItems: 'baseline' }}>
-          <Stat label="Time" value={legTime ?? PENDING} />
-          <Stat label="Dist" value={legDist ?? PENDING} />
-          <Stat label="Fuel" value={PENDING} unit="lb" color={colors.gold} />
+        <Box sx={{ mt: '5px', pt: '6px', px: '9px', pb: '7px', borderTop: '1px solid rgba(255,255,255,0.07)', display: 'flex', flexDirection: 'column', gap: '3px' }}>
+          <LegRow label="Time" value={legTime ?? PENDING} />
+          <LegRow label="Dist" value={legDist ?? PENDING} />
+          <LegRow label="Fuel" value={PENDING} color={colors.gold} />
         </Box>
       ) : (
         <Box sx={{ flex: 1, mt: '5px', pt: '5px', pb: '6px', borderTop: '1px solid rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', color: FAINT }}>
