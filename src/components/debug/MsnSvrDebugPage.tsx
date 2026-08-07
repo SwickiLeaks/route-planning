@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Box from '@mui/material/Box';
 import Paper from '@mui/material/Paper';
 import Button from '@mui/material/Button';
@@ -226,26 +226,41 @@ const formatResult = (value: unknown): string => {
 };
 
 // One runnable call: its inputs, a Run button, and the result/error.
-const ActionCard = ({ action, onRan }: { action: DebugAction; onRan: () => void }) => {
+const ActionCard = ({
+  action,
+  defaultFor,
+  onRan,
+}: {
+  action: DebugAction;
+  defaultFor: (key: string) => string;
+  onRan: (action: DebugAction, result: unknown, ok: boolean) => void;
+}) => {
   const [values, setValues] = useState<Record<string, string>>({});
   const [status, setStatus] = useState<'idle' | 'running' | 'ok' | 'error'>('idle');
   const [output, setOutput] = useState('');
   const [elapsed, setElapsed] = useState<number | null>(null);
 
+  // Typed value if present, otherwise the current-session default.
+  const valueFor = (key: string) => values[key] ?? defaultFor(key);
+
   const run = async () => {
     setStatus('running');
     setOutput('');
     const startedAt = Date.now();
+    const effective = Object.fromEntries(action.fields.map((f) => [f.key, valueFor(f.key)]));
+    let result: unknown;
+    let ok = false;
     try {
-      const result = await action.run(values);
+      result = await action.run(effective);
       setOutput(formatResult(result));
       setStatus('ok');
+      ok = true;
     } catch (e) {
       setOutput(e instanceof Error ? `${e.name}: ${e.message}` : String(e));
       setStatus('error');
     } finally {
       setElapsed(Date.now() - startedAt);
-      onRan();
+      onRan(action, ok ? result : undefined, ok);
     }
   };
 
@@ -265,7 +280,7 @@ const ActionCard = ({ action, onRan }: { action: DebugAction; onRan: () => void 
             size="small"
             label={f.label}
             placeholder={f.placeholder}
-            value={values[f.key] ?? ''}
+            value={valueFor(f.key)}
             onChange={(e) => setValues((prev) => ({ ...prev, [f.key]: e.target.value }))}
             sx={{ width: '11rem' }}
           />
@@ -308,10 +323,39 @@ const ActionCard = ({ action, onRan }: { action: DebugAction; onRan: () => void 
   );
 };
 
+const POINT_ADD_ACTIONS = new Set(['addPointToCurrentRoute', 'insertPointToCurrentRoute']);
+
 // Dev-only page to exercise every MsnSvr MissionClient call by hand.
 const MsnSvrDebugPage = () => {
   const [version, setVersion] = useState(0);
+  const [pointIds, setPointIds] = useState<string[]>([]);
   const bump = () => setVersion((v) => v + 1);
+  const started = useRef(false);
+
+  // Create the mission + route once on load so calls use the current session.
+  useEffect(() => {
+    if (started.current) return;
+    started.current = true;
+    missionClient
+      .createMissionAndRoute()
+      .then(() => bump())
+      .catch((e) => console.error('[msnsvr] debug bootstrap failed', e));
+  }, []);
+
+  // Prefill mission/route/point fields from the live session.
+  const defaultFor = (key: string): string => {
+    if (key === 'missionId') return missionClient.currentMissionId;
+    if (key === 'routeId') return missionClient.currentRouteId;
+    if (key === 'pointId') return pointIds[pointIds.length - 1] ?? '';
+    return '';
+  };
+
+  const handleRan = (action: DebugAction, result: unknown, ok: boolean) => {
+    bump();
+    if (ok && typeof result === 'string' && result && POINT_ADD_ACTIONS.has(action.name)) {
+      setPointIds((prev) => [...prev, result]);
+    }
+  };
 
   const state = [
     { label: 'mission', value: missionClient.currentMissionId },
@@ -327,7 +371,7 @@ const MsnSvrDebugPage = () => {
         <Box>
           <Typography sx={{ fontSize: 22, fontWeight: 700 }}>MsnSvr Debug</Typography>
           <Typography sx={{ fontSize: 13, color: MUTED }}>
-            Calls go to the live gRPC service (dev: /api → :5000). Remove <code>?debug</code> from the URL to return to the app.
+            Calls go to the live gRPC service (dev: /api → :5000). A mission + route are created on load; mission/route/point fields prefill from that session. Remove <code>?debug</code> from the URL to return to the app.
           </Typography>
         </Box>
 
@@ -345,6 +389,24 @@ const MsnSvrDebugPage = () => {
               </Box>
             ))}
           </Box>
+
+          <Box sx={{ mt: 1.5, pt: 1.5, borderTop: `1px solid ${colors.accent}33` }}>
+            <Typography sx={{ fontSize: 10, textTransform: 'uppercase', color: MUTED, mb: 0.5 }}>
+              waypoint point ids ({pointIds.length})
+            </Typography>
+            {pointIds.length === 0 ? (
+              <Typography sx={{ fontSize: 12, color: FAINT }}>none created yet</Typography>
+            ) : (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                {pointIds.map((id, i) => (
+                  <Typography key={id} sx={{ fontFamily: MONO, fontSize: 12.5, color: colors.white }}>
+                    <Box component="span" sx={{ color: FAINT }}>{String(i + 1).padStart(2, '0')} </Box>
+                    {id}
+                  </Typography>
+                ))}
+              </Box>
+            )}
+          </Box>
         </Paper>
 
         {groups.map((group) => (
@@ -353,7 +415,7 @@ const MsnSvrDebugPage = () => {
               {group}
             </Typography>
             {ACTIONS.filter((a) => a.group === group).map((a) => (
-              <ActionCard key={a.name} action={a} onRan={bump} />
+              <ActionCard key={a.name} action={a} defaultFor={defaultFor} onRan={handleRan} />
             ))}
           </Box>
         ))}
