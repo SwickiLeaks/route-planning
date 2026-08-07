@@ -14,6 +14,19 @@ import type { LatLng } from '@/types/proto';
 
 export type MissionSessionStatus = 'initializing' | 'ready' | 'error';
 
+export interface AddedPoint {
+  /** Backend-assigned RoutePoint GUID. */
+  pointId: string;
+  /** Planned altitude in feet from the service, if it returned one. */
+  altitudeFt?: number;
+}
+
+// Pulls the leading number out of the service's altitude string (e.g. "1500 A").
+const altitudeFeetFrom = (raw: string): number | undefined => {
+  const match = raw.match(/-?\d+(?:\.\d+)?/);
+  return match ? Number(match[0]) : undefined;
+};
+
 export interface MissionSession {
   /** Backend-assigned mission GUID. */
   missionId: string;
@@ -22,8 +35,8 @@ export interface MissionSession {
   status: MissionSessionStatus;
   error: unknown;
   ready: boolean;
-  /** Appends a route point, sets its coordinate, and resolves with its GUID. */
-  addPoint: (position: LatLng) => Promise<string>;
+  /** Appends a route point, sets its coordinate, reads its planned altitude. */
+  addPoint: (position: LatLng) => Promise<AddedPoint>;
 }
 
 const MissionSessionContext = createContext<MissionSession | null>(null);
@@ -60,19 +73,26 @@ export const MissionSessionProvider = ({ children }: { children: ReactNode }) =>
       });
   }, []);
 
-  const addPoint = useCallback((position: LatLng) => {
+  const addPoint = useCallback((position: LatLng): Promise<AddedPoint> => {
     const run = queue.current
       .catch(() => {}) // isolate one op's failure from the next
-      .then(async () => {
+      .then(async (): Promise<AddedPoint> => {
         await readyRef.current; // mission/route must exist first
-        const id = await missionClient.addPointToCurrentRoute();
+        const pointId = await missionClient.addPointToCurrentRoute();
         // Push the coordinate; keep the id even if this fails so the UI stays linked.
         try {
-          await missionClient.setPointCoordinate(id, toMsnSvrCoordinate(position));
+          await missionClient.setPointCoordinate(pointId, toMsnSvrCoordinate(position));
         } catch (e) {
           console.error('[msnsvr] setPointCoordinate failed', e);
         }
-        return id;
+        // Read the service's default planned altitude for this point.
+        let altitudeFt: number | undefined;
+        try {
+          altitudeFt = altitudeFeetFrom(await missionClient.getPointPlannedAltitude(pointId));
+        } catch (e) {
+          console.error('[msnsvr] getPointPlannedAltitude failed', e);
+        }
+        return { pointId, altitudeFt };
       });
     queue.current = run;
     return run;

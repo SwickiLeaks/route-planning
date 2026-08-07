@@ -412,6 +412,11 @@ export class MissionClient {
     return this.getPointAttribute(pointId, PointAttribute.Coordinate.id);
   }
 
+  // The point's planned (default) altitude value, e.g. "1500 A".
+  getPointPlannedAltitude(pointId: string): Promise<string> {
+    return this.getPointAttribute(pointId, PointAttribute.Altitude.id);
+  }
+
   // The last calculated point (which holds the results) for a route point.
   async getCalculatedPointId(pointId: string): Promise<string> {
     const res = await this.client.getChildrenInfo({

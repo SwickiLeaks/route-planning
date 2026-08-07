@@ -186,9 +186,16 @@ export const RouteBuilderProvider = ({
       addWaypoint: (position: LatLng, name?: string, altitudeFt?: number) => {
         const id = uid('wp');
         dispatch({ type: 'addWaypoint', id, position, name, altitudeFt });
-        // Mirror the add to MsnSvr (create point + set coordinate) and record its GUID.
+        // Mirror the add to MsnSvr (create point + coordinate) and record the GUID
+        // plus the service's default planned altitude.
         addPoint(position)
-          .then((serverId) => dispatch({ type: 'updateWaypoint', id, patch: { serverId } }))
+          .then(({ pointId, altitudeFt: planned }) =>
+            dispatch({
+              type: 'updateWaypoint',
+              id,
+              patch: planned != null ? { serverId: pointId, altitudeFt: planned } : { serverId: pointId },
+            }),
+          )
           .catch((e) => console.error('[msnsvr] addPointToCurrentRoute failed', e));
       },
       removeWaypoint: (id: string) => dispatch({ type: 'removeWaypoint', id }),
