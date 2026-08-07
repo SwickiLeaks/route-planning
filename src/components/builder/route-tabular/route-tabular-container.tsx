@@ -18,7 +18,7 @@ export function RouteTabularContainer(): React.JSX.Element {
     timeEnroute: value(wp.id, CalcPointAttribute.LegTime) ?? PENDING,
     timeTotal: PENDING,
     distanceEnroute: value(wp.id, CalcPointAttribute.LegDist) ?? PENDING,
-    fuelEnroute: PENDING,
+    fuelEnroute: value(wp.id, CalcPointAttribute.LegFuel) ?? PENDING,
     fuelTotal: PENDING,
     fuelRem: PENDING,
     grndSpd: PENDING,

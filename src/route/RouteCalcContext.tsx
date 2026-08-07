@@ -70,6 +70,7 @@ const formatLbs = (value: string): string => {
 const FORMATTERS: Record<string, (value: string) => string> = {
   [CalcPointAttribute.LegTime]: formatHMS, // service returns seconds
   [CalcPointAttribute.LegDist]: formatNm, // service returns meters
+  [CalcPointAttribute.LegFuel]: formatLbs, // service returns kilograms
   [CalcPointAttribute.RouteTime]: formatHMS,
   [CalcPointAttribute.RouteDistance]: formatNm,
   [CalcPointAttribute.SegmentFuel]: formatLbs, // service returns kilograms

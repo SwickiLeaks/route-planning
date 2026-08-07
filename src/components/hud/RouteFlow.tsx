@@ -50,6 +50,7 @@ const PointTile = ({
   leg,
   legTime,
   legDist,
+  legFuel,
 }: {
   waypoint: BuilderWaypoint;
   index: number;
@@ -57,6 +58,7 @@ const PointTile = ({
   leg?: LegCalc;
   legTime?: string;
   legDist?: string;
+  legFuel?: string;
 }) => {
   const actions = waypoint.actions ?? [];
   const active = actions.length > 0;
@@ -110,7 +112,7 @@ const PointTile = ({
         <Box sx={{ mt: '5px', pt: '6px', px: '9px', pb: '7px', borderTop: '1px solid rgba(255,255,255,0.07)', display: 'flex', flexDirection: 'column', gap: '3px' }}>
           <LegRow label="Time" value={legTime ?? PENDING} />
           <LegRow label="Dist" value={legDist ?? PENDING} />
-          <LegRow label="Fuel" value={PENDING} color={colors.gold} />
+          <LegRow label="Fuel" value={legFuel ?? PENDING} color={colors.gold} />
         </Box>
       ) : (
         <Box sx={{ flex: 1, mt: '5px', pt: '5px', pb: '6px', borderTop: '1px solid rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, letterSpacing: '0.06em', textTransform: 'uppercase', color: FAINT }}>
@@ -144,6 +146,7 @@ const RouteFlow = ({ route, calc }: { route: BuilderRoute; calc: RouteCalculatio
             leg={calc.legs[i - 1]}
             legTime={value(wp.id, CalcPointAttribute.LegTime)}
             legDist={value(wp.id, CalcPointAttribute.LegDist)}
+            legFuel={value(wp.id, CalcPointAttribute.LegFuel)}
           />
           {i < lastIndex && <FlowArrow />}
         </Fragment>

@@ -68,6 +68,7 @@ export const PointAttribute = {
 export const CalcPointAttribute = {
   LegTime: "StateLegTime", // elapsed time from the beginning of the leg
   LegDist: "StateLegDist", // cumulative distance from the beginning of the leg
+  LegFuel: "StateLegFuel", // fuel consumed on this leg
   RouteTime: "StateRouteTime", // cumulative route time (total on the last point)
   RouteDistance: "StateRouteDistance", // cumulative route distance (total)
   SegmentFuel: "StateSegmentFuel", // cumulative fuel consumed (total)
