@@ -60,10 +60,19 @@ const formatNm = (value: string): string => {
   return meters == null ? value : `${(meters / 1852).toFixed(1)} NM`;
 };
 
+// Kilograms → pounds, rounded: "1,234 lb".
+const formatLbs = (value: string): string => {
+  const kg = leadingNumber(value);
+  return kg == null ? value : `${Math.round(kg * 2.2046226).toLocaleString()} lb`;
+};
+
 // Per-attribute display formatting; attributes without an entry show as-is.
 const FORMATTERS: Record<string, (value: string) => string> = {
   [CalcPointAttribute.LegTime]: formatHMS, // service returns seconds
   [CalcPointAttribute.LegDist]: formatNm, // service returns meters
+  [CalcPointAttribute.RouteTime]: formatHMS,
+  [CalcPointAttribute.RouteDistance]: formatNm,
+  [CalcPointAttribute.SegmentFuel]: formatLbs, // service returns kilograms
 };
 
 // Runs a backend calculation when the route settles and exposes the results.

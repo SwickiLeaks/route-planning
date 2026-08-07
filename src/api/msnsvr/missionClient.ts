@@ -63,10 +63,14 @@ export const PointAttribute = {
   Coordinate: { id: "Coordinate", type: "MP.Core.Navigation.Coordinate" },
 } as const;
 
-// Attributes read from a point's calculated result.
+// Attributes read from a point's calculated result. Route* / Segment* attributes
+// are cumulative, so the final point in the route carries the route totals.
 export const CalcPointAttribute = {
   LegTime: "StateLegTime", // elapsed time from the beginning of the leg
   LegDist: "StateLegDist", // cumulative distance from the beginning of the leg
+  RouteTime: "StateRouteTime", // cumulative route time (total on the last point)
+  RouteDistance: "StateRouteDistance", // cumulative route distance (total)
+  SegmentFuel: "StateSegmentFuel", // cumulative fuel consumed (total)
 } as const;
 
 const CLIENT_ID = "demo";

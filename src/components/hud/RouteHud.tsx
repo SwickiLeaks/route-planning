@@ -8,6 +8,8 @@ import type { BuilderRoute } from '@/route/routeBuilderTypes';
 import { MUTED, glassPane, PENDING } from '@/components/shared/hudStyle';
 import MetricTile from '@/components/hud/MetricTile';
 import RouteFlow from '@/components/hud/RouteFlow';
+import { useRouteCalc } from '@/route/RouteCalcContext';
+import { CalcPointAttribute } from '@/api/msnsvr/missionClient';
 
 interface RouteHudProps {
   route: BuilderRoute;
@@ -67,6 +69,7 @@ const HudHandle = ({
 // Bottom HUD: a cluster of glass panes layered over the map.
 const RouteHud = ({ route, calc, calculating = false, faded = false }: RouteHudProps) => {
   const [collapsed, setCollapsed] = useState(false);
+  const { total } = useRouteCalc();
 
   const dim = {
     opacity: calculating ? 0.55 : 1,
@@ -136,9 +139,9 @@ const RouteHud = ({ route, calc, calculating = false, faded = false }: RouteHudP
         )}
 
         <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', justifyContent: 'center', pointerEvents: faded || collapsed ? 'none' : 'auto', ...dim }}>
-          <MetricTile label="Distance" value={PENDING} unit="nm" />
-          <MetricTile label="Route Time" value={PENDING} unit="ete" accent={colors.accent} />
-          <MetricTile label="Fuel Burn" value={PENDING} unit="lb" accent={colors.gold} />
+          <MetricTile label="Distance" value={total(CalcPointAttribute.RouteDistance) ?? PENDING} />
+          <MetricTile label="Route Time" value={total(CalcPointAttribute.RouteTime) ?? PENDING} accent={colors.accent} />
+          <MetricTile label="Fuel Burn" value={total(CalcPointAttribute.SegmentFuel) ?? PENDING} accent={colors.gold} />
           <MetricTile label="Remaining" value={PENDING} unit="lb" />
           <MetricTile label="Avg Flow" value={PENDING} unit="lb/hr" />
         </Box>
