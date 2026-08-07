@@ -6,7 +6,7 @@ import RouteHud from "@/components/hud/RouteHud";
 import { useRoutes } from "@/hooks";
 import { useRouteCalculation } from "@/calc/useRouteCalculation";
 import { RouteBuilderProvider, useRouteBuilder } from "@/route/RouteBuilderContext";
-import { RouteCalcProvider } from "@/route/RouteCalcContext";
+import { RouteCalcProvider, useRouteCalc } from "@/route/RouteCalcContext";
 import { RouteTabularProvider } from "@/route/RouteTabularContext";
 import type { BuilderRoute } from "@/route/routeBuilderTypes";
 
@@ -14,7 +14,9 @@ import type { BuilderRoute } from "@/route/routeBuilderTypes";
 const DashboardContent = () => {
   const { route, selectWaypoint, placing, addWaypoint } = useRouteBuilder();
   const calc = useRouteCalculation(route);
+  const routeCalc = useRouteCalc();
   const [mapInteracting, setMapInteracting] = useState(false);
+  const calculating = routeCalc.status === "calculating";
 
   return (
     <main style={{ position: "relative", height: "100%" }}>
@@ -22,7 +24,7 @@ const DashboardContent = () => {
         routes={[route]}
         activeRoute={route}
         calc={calc.data}
-        calculating={calc.isCalculating}
+        calculating={calculating}
         placing={placing}
         onMapClick={(lngLat) =>
           placing ? addWaypoint(lngLat) : selectWaypoint(null)
@@ -34,7 +36,7 @@ const DashboardContent = () => {
         <RouteHud
           route={route}
           calc={calc.data}
-          calculating={calc.isCalculating}
+          calculating={calculating}
           faded={mapInteracting}
         />
       )}
