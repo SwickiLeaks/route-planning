@@ -39,15 +39,16 @@ const displayValue = (raw: string): string => {
   return (idx >= 0 ? raw.slice(idx + 1) : raw).trim().replace(/^raw/i, '');
 };
 
-// A decimal count of seconds ("123.456789 sec") shown to a tenth: "123.5 sec".
-const formatSeconds = (value: string): string => {
+// Renders the leading decimal to a tenth with a unit: "123.456 …" → "123.5 sec".
+const fixedWithUnit = (unit: string) => (value: string): string => {
   const match = value.match(/-?\d+(?:\.\d+)?/);
-  return match ? `${Number(match[0]).toFixed(1)} sec` : value;
+  return match ? `${Number(match[0]).toFixed(1)} ${unit}` : value;
 };
 
 // Per-attribute display formatting; attributes without an entry show as-is.
 const FORMATTERS: Record<string, (value: string) => string> = {
-  [CalcPointAttribute.LegTime]: formatSeconds,
+  [CalcPointAttribute.LegTime]: fixedWithUnit('sec'),
+  [CalcPointAttribute.LegDist]: fixedWithUnit('m'), // service returns meters
 };
 
 // Runs a backend calculation when the route settles and exposes the results.
