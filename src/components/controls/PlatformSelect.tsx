@@ -7,18 +7,9 @@ import { MONO, MUTED } from '@/components/shared/hudStyle';
 
 // Selectable flight platforms. Hard-coded for now; a later pass can source these
 // from the backend and push the choice onto the mission's vehicle.
-const PLATFORMS = [
-  'MH-47G',
-  'AH-6',
-  'MH-6',
-  'UH-60',
-  'MH-60L',
-  'MH-60L DAP',
-  'MH-60M',
-  'MQ-1C',
-] as const;
+const PLATFORMS = ['Generic Aircraft', 'MH-60 CLN', 'MH-6M', 'CH-47G'] as const;
 
-const DEFAULT_PLATFORM = 'UH-60';
+const DEFAULT_PLATFORM = 'MH-60 CLN';
 
 // Platform picker for the control bar: choose the flying vehicle for the route.
 const PlatformSelect = () => {
