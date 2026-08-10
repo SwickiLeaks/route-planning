@@ -1,9 +1,9 @@
-import { useState } from 'react';
 import Box from '@mui/material/Box';
 import { glassPane } from '@/components/shared/hudStyle';
 import { colors } from '@/theme/tokens';
 import RouteBar from '@/components/builder/RouteBar';
 import { SIDE_PANELS } from '@/components/controls/sidePanelRegistry';
+import { usePanels } from '@/components/controls/PanelContext';
 
 // A compact icon+label button that toggles a side panel below the bar.
 const PanelButton = ({
@@ -46,11 +46,9 @@ const PanelButton = ({
 // Top control dock: persistent route entry bar plus panel-launcher buttons.
 // Waypoint editing lives in the map tooltip, not here, to save vertical space.
 const ControlBar = ({ faded = false }: { faded?: boolean }) => {
-  const [active, setActive] = useState<string | null>(null);
+  const { activePanel, togglePanel } = usePanels();
 
-  const openPanel = (id: string) => setActive((cur) => (cur === id ? null : id));
-
-  const toolPanel = SIDE_PANELS.find((p) => p.id === active) ?? null;
+  const toolPanel = SIDE_PANELS.find((p) => p.id === activePanel) ?? null;
 
   const fade = {
     opacity: faded ? 0.12 : 1,
@@ -86,8 +84,8 @@ const ControlBar = ({ faded = false }: { faded?: boolean }) => {
               key={p.id}
               icon={p.icon}
               label={p.label}
-              active={active === p.id}
-              onClick={() => openPanel(p.id)}
+              active={activePanel === p.id}
+              onClick={() => togglePanel(p.id)}
             />
           ))}
         </Box>

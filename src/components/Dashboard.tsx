@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { MissionSessionProvider, useMsnHandshake } from "@/api/hooks";
 import ControlBar from "@/components/controls/ControlBar";
+import { PanelProvider } from "@/components/controls/PanelContext";
 import MapView from "@/components/map/MapView";
 import RouteHud from "@/components/hud/RouteHud";
 import { useRoutes } from "@/hooks";
@@ -19,28 +20,30 @@ const DashboardContent = () => {
   const calculating = routeCalc.status === "calculating";
 
   return (
-    <main style={{ position: "relative", height: "100%" }}>
-      <MapView
-        routes={[route]}
-        activeRoute={route}
-        calc={calc.data}
-        calculating={calculating}
-        placing={placing}
-        onMapClick={(lngLat) =>
-          placing ? addWaypoint(lngLat) : selectWaypoint(null)
-        }
-        onInteractionChange={setMapInteracting}
-      />
-      <ControlBar faded={mapInteracting} />
-      {calc.data && (
-        <RouteHud
-          route={route}
+    <PanelProvider>
+      <main style={{ position: "relative", height: "100%" }}>
+        <MapView
+          routes={[route]}
+          activeRoute={route}
           calc={calc.data}
           calculating={calculating}
-          faded={mapInteracting}
+          placing={placing}
+          onMapClick={(lngLat) =>
+            placing ? addWaypoint(lngLat) : selectWaypoint(null)
+          }
+          onInteractionChange={setMapInteracting}
         />
-      )}
-    </main>
+        <ControlBar faded={mapInteracting} />
+        {calc.data && (
+          <RouteHud
+            route={route}
+            calc={calc.data}
+            calculating={calculating}
+            faded={mapInteracting}
+          />
+        )}
+      </main>
+    </PanelProvider>
   );
 };
 

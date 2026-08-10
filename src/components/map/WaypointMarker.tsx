@@ -5,6 +5,7 @@ import { colors } from '@/theme/tokens';
 import { MONO, PANEL_BORDER, glow } from '@/components/shared/hudStyle';
 import { actionDef } from '@/route/actionCatalog';
 import WaypointInfoCard from '@/components/map/WaypointInfoCard';
+import { usePanels } from '@/components/controls/PanelContext';
 import type { LegCalc } from '@/calc/types';
 import type { BuilderWaypoint } from '@/route/routeBuilderTypes';
 
@@ -26,9 +27,11 @@ const WaypointMarker = ({
   selected,
   onSelect,
 }: WaypointMarkerProps) => {
-  // The tooltip is expanded exactly when this waypoint is selected, so clicking a
-  // route chip (which selects) opens it on the map too.
-  const expanded = selected;
+  const { activePanel, closePanel } = usePanels();
+  // The tooltip expands when this waypoint is selected, but never while a top-bar
+  // side panel is open — the two float over the same space and would collide. A
+  // tabular row selection thus highlights the marker without popping the tooltip.
+  const expanded = selected && !activePanel;
   const chipRef = useRef<HTMLDivElement>(null);
   const baseColor = (waypoint.actions?.length ?? 0) > 0 ? colors.accent : isEndpoint ? colors.gold : colors.brown;
   const accent = selected ? colors.accent : baseColor;
@@ -53,12 +56,18 @@ const WaypointMarker = ({
     };
   }, []);
 
+  // Interacting with a marker on the map expands its tooltip, so close any open
+  // side panel first — the panel and an expanded tooltip are mutually exclusive.
   const select = (e: { originalEvent: { stopPropagation: () => void } }) => {
     e.originalEvent.stopPropagation();
+    closePanel();
     onSelect();
   };
 
-  const toggle = () => onSelect();
+  const toggle = () => {
+    closePanel();
+    onSelect();
+  };
 
   return (
     <>
