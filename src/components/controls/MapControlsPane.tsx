@@ -1,32 +1,31 @@
 import Box from '@mui/material/Box';
 import Slider from '@mui/material/Slider';
-import DarkModeOutlinedIcon from '@mui/icons-material/DarkModeOutlined';
+import Brightness6Icon from '@mui/icons-material/Brightness6';
 import { colors } from '@/theme/tokens';
-import { MONO, MUTED } from '@/components/shared/hudStyle';
 import { useMapSettings } from '@/components/map/MapSettingsContext';
 
-// Map display controls. Currently a single dimness slider that drives the on-map
-// scrim; more map settings can join this panel later.
+// Leftmost (least brightness) still leaves the map faintly visible.
+const MAX_DIM = 0.8;
+
+// Map display controls. A single brightness slider for now — right is full
+// brightness (no dim), left is darkest — with room for more map settings later.
 const MapControlsPane = () => {
   const { dim, setDim } = useMapSettings();
-  const pct = Math.round(dim * 100);
+  const brightness = Math.round((1 - dim / MAX_DIM) * 100);
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, minWidth: 240, px: 0.5, py: 0.25 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25, width: 190, px: 0.5, py: 0.25 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <DarkModeOutlinedIcon sx={{ fontSize: 17, color: colors.accent }} />
-        <Box sx={{ flex: 1, fontSize: 12.5, fontWeight: 600, color: colors.white }}>Dimness</Box>
-        <Box sx={{ fontFamily: MONO, fontSize: 12, color: MUTED, minWidth: 34, textAlign: 'right' }}>
-          {pct}%
-        </Box>
+        <Brightness6Icon sx={{ fontSize: 16, color: colors.accent }} />
+        <Box sx={{ fontSize: 12, fontWeight: 600, color: colors.white }}>Map Brightness</Box>
       </Box>
       <Slider
         size="small"
-        value={pct}
+        value={brightness}
         min={0}
-        max={80}
-        onChange={(_, v) => setDim((Array.isArray(v) ? v[0] : v) / 100)}
-        aria-label="Map dimness"
+        max={100}
+        onChange={(_, v) => setDim((1 - (Array.isArray(v) ? v[0] : v) / 100) * MAX_DIM)}
+        aria-label="Map brightness"
         sx={{ color: colors.accent, mx: '4px', width: 'auto' }}
       />
     </Box>
