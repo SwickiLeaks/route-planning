@@ -53,7 +53,7 @@ const MapControlsPane = () => {
   const brightness = Math.round((1 - dim / MAX_DIM) * 100);
 
   // Placeholder state — these respond in the UI but aren't connected to the map yet.
-  const [basemap, setBasemap] = useState('vfr');
+  const [basemap, setBasemap] = useState('terrain');
   const [labels, setLabels] = useState(true);
   const [hillshade, setHillshade] = useState(true);
   const [grid, setGrid] = useState(false);
