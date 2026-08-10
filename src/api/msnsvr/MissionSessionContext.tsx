@@ -93,6 +93,8 @@ export interface MissionSession {
   ready: boolean;
   /** Appends a route point, sets its coordinate, reads its planned altitude. */
   addPoint: (position: LatLng) => Promise<AddedPoint>;
+  /** Removes the route point at the given index from the backend. */
+  deletePoint: (index: number) => Promise<void>;
   /** Turns a point into a hover with the given dwell time and height AGL. */
   setHover: (pointId: string, durationSec: number, heightFt: number) => Promise<void>;
   /** Sets only the dwell time on a point's hover. */
@@ -180,6 +182,17 @@ export const MissionSessionProvider = ({ children }: { children: ReactNode }) =>
           console.error('[msnsvr] getPointHover failed', e);
         }
         return { pointId, altitudeFt, hover };
+      });
+    queue.current = run;
+    return run;
+  }, []);
+
+  const deletePoint = useCallback((index: number): Promise<void> => {
+    const run = queue.current
+      .catch(() => {})
+      .then(async () => {
+        await readyRef.current;
+        await missionClient.deletePointFromCurrentRoute(index);
       });
     queue.current = run;
     return run;
@@ -308,6 +321,7 @@ export const MissionSessionProvider = ({ children }: { children: ReactNode }) =>
       error,
       ready: status === 'ready',
       addPoint,
+      deletePoint,
       setHover,
       setHoverDuration,
       setHoverHeight,
@@ -321,6 +335,7 @@ export const MissionSessionProvider = ({ children }: { children: ReactNode }) =>
       status,
       error,
       addPoint,
+      deletePoint,
       setHover,
       setHoverDuration,
       setHoverHeight,

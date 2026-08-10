@@ -286,6 +286,22 @@ export class MissionClient {
     }
   }
 
+  // Removes the route point at `index`. Mirrors insertPointToCurrentRoute but
+  // calls RemoveChild instead of AddChild.
+  async deletePointFromCurrentRoute(index: number): Promise<string> {
+    await this.startTransaction(this.currentMissionId, "Delete route point");
+    try {
+      const res = await this.client.removeChild({
+        client: this.callId(),
+        parent: this.segmentAsParentId(),
+        child: { type: ModelType.RoutePoint, id: "", index },
+      });
+      return res.id;
+    } finally {
+      await this.endTransaction();
+    }
+  }
+
   // Sets one attribute on a route point, inside a transaction.
   async setPointAttribute(
     pointId: string,

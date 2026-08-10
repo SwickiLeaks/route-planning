@@ -203,7 +203,7 @@ export const RouteBuilderProvider = ({
     placing: false,
   });
 
-  const { addPoint, setHover, setHoverDuration, setHoverHeight, clearHover, reorderPoints } =
+  const { addPoint, deletePoint, setHover, setHoverDuration, setHoverHeight, clearHover, reorderPoints } =
     useMissionSession();
 
   // Always-current view of the route so imperative action handlers can read a
@@ -239,7 +239,18 @@ export const RouteBuilderProvider = ({
           })
           .catch((e) => console.error('[msnsvr] addPointToCurrentRoute failed', e));
       },
-      removeWaypoint: (id: string) => dispatch({ type: 'removeWaypoint', id }),
+      removeWaypoint: (id: string) => {
+        const index = routeRef.current.waypoints.findIndex((w) => w.id === id);
+        const wp = index >= 0 ? routeRef.current.waypoints[index] : undefined;
+        dispatch({ type: 'removeWaypoint', id });
+        // Remove the matching backend point (its slot = its current position).
+        // Only if it was synced; a recalc follows from the signature change.
+        if (wp?.serverId && index >= 0) {
+          deletePoint(index).catch((e) =>
+            console.error('[msnsvr] deletePointFromCurrentRoute failed', e),
+          );
+        }
+      },
       moveWaypoint: (from: number, to: number) => {
         if (from === to) return;
         // Data moves; serverIds stay pinned to their slots. Every slot in the
@@ -315,7 +326,7 @@ export const RouteBuilderProvider = ({
         }
       },
     }),
-    [addPoint, setHover, setHoverDuration, setHoverHeight, clearHover, reorderPoints],
+    [addPoint, deletePoint, setHover, setHoverDuration, setHoverHeight, clearHover, reorderPoints],
   );
 
   const value = useMemo<RouteBuilderValue>(
