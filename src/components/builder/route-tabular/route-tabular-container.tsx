@@ -10,14 +10,15 @@ export function RouteTabularContainer(): React.JSX.Element {
   const { route, selectedWaypointId, selectWaypoint } = useRouteBuilder();
   const { value } = useRouteCalc();
 
-  // Waypoint code and StateLegTime are wired; other columns stay blank until
-  // their data sources are hooked up.
+  // Each calculated point carries its cumulative StateRouteTime/StateRouteDistance,
+  // which is what the enroute/total columns show. The remaining columns stay blank
+  // until their data sources are hooked up.
   const rows: RouteTabularDataObject[] = route.waypoints.map((wp) => ({
     id: wp.id,
     code: wp.name,
     timeEnroute: value(wp.id, CalcPointAttribute.LegTime) ?? PENDING,
-    timeTotal: PENDING,
-    distanceEnroute: value(wp.id, CalcPointAttribute.LegDist) ?? PENDING,
+    timeTotal: value(wp.id, CalcPointAttribute.RouteTime) ?? PENDING,
+    distanceEnroute: value(wp.id, CalcPointAttribute.RouteDistance) ?? PENDING,
     fuelEnroute: value(wp.id, CalcPointAttribute.LegFuel) ?? PENDING,
     fuelTotal: PENDING,
     fuelRem: PENDING,
