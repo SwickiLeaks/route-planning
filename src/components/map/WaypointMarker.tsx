@@ -113,7 +113,12 @@ const WaypointMarker = ({
             bgcolor: selected ? 'rgba(28,22,13,0.95)' : 'rgba(16,17,19,0.92)',
             border: selected ? `1px solid ${colors.accent}` : PANEL_BORDER,
             backdropFilter: 'blur(6px)',
-            transition: 'border-color 120ms, background-color 120ms',
+            // While a side panel is open, fade the name chip out (the small shape
+            // marker stays) so chips don't bleed through the panel. Non-interactive
+            // when hidden so a ghost chip can't catch clicks.
+            opacity: activePanel ? 0 : 1,
+            pointerEvents: activePanel ? 'none' : 'auto',
+            transition: 'border-color 120ms, background-color 120ms, opacity 160ms ease',
           }}
         >
           <Box
