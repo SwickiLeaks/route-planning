@@ -100,9 +100,8 @@ const MapControlsPane = () => {
             },
           }}
         >
+          <ToggleButton value="terrain">Terrain</ToggleButton>
           <ToggleButton value="vfr">VFR</ToggleButton>
-          <ToggleButton value="satellite">Satellite</ToggleButton>
-          <ToggleButton value="streets">Streets</ToggleButton>
         </ToggleButtonGroup>
       </Section>
 
