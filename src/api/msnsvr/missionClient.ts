@@ -63,6 +63,29 @@ export const PointAttribute = {
   Coordinate: { id: "Coordinate", type: "MP.Core.Navigation.Coordinate" },
 } as const;
 
+// Attribute-id prefix the service uses for PropertyInfo-backed attributes.
+const PROPERTY_PREFIX = "PropertyInfo";
+
+// Hover (RotaryWingDelay) attributes. PointType lives on the route point; the
+// dwell Duration and Height live on the hover event the service creates.
+export const HoverAttribute = {
+  PointType: {
+    id: `${PROPERTY_PREFIX}PointType`,
+    type: "MP.MissionEditor.PointUsageType",
+  },
+  Duration: {
+    id: `${PROPERTY_PREFIX}Time`,
+    type: "MP.Core.Units.TimeDelta",
+  },
+  Height: { id: "HoverHeightEvent", type: "MP.Core.Weather.AltitudeAGL" },
+} as const;
+
+// PointType values (MP.MissionEditor.PointUsageType).
+export const PointUsageType = {
+  Hover: "RotaryWingDelay",
+  Turn: "Turn",
+} as const;
+
 // Attributes read from a point's calculated result. Route* / Segment* attributes
 // are cumulative, so the final point in the route carries the route totals.
 export const CalcPointAttribute = {
@@ -90,6 +113,8 @@ const assemblyNameFor = (attributeType: string): string => {
     return "MP.Mission.Data.Core7, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null;";
   if (attributeType.startsWith("MP.Geometry."))
     return "MP.Geometry3, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null;";
+  if (attributeType.startsWith("MP.MissionEditor"))
+    return "MP.MissionEditor7, Version=2.0.0.0, Culture=neutral, PublicKeyToken=null;";
   return "";
 };
 
@@ -312,6 +337,96 @@ export class MissionClient {
       PointAttribute.Coordinate.type,
       coordinate,
     );
+  }
+
+  // Sets one attribute on a point's event, inside a transaction.
+  async setEventAttribute(
+    pointId: string,
+    eventId: string,
+    attributeId: string,
+    attributeType: string,
+    attributeValue: string | null,
+  ): Promise<void> {
+    await this.startTransaction(
+      this.currentMissionId,
+      `Set event ${attributeId}`,
+    );
+    try {
+      await this.client.setAttributes(
+        this.attributeRequest(
+          this.eventId(pointId, eventId),
+          attributeId,
+          attributeType,
+          attributeValue,
+        ),
+      );
+    } finally {
+      await this.endTransaction();
+    }
+  }
+
+  // Marks a route point as a hover; the service then adds a hover event to it.
+  setPointTypeToHover(pointId: string): Promise<void> {
+    return this.setPointAttribute(
+      pointId,
+      HoverAttribute.PointType.id,
+      HoverAttribute.PointType.type,
+      PointUsageType.Hover,
+    );
+  }
+
+  // Reverts a hover point back to a normal turn point.
+  setPointTypeToNormalTurn(pointId: string): Promise<void> {
+    return this.setPointAttribute(
+      pointId,
+      HoverAttribute.PointType.id,
+      HoverAttribute.PointType.type,
+      PointUsageType.Turn,
+    );
+  }
+
+  // Hover dwell time on the point's event, e.g. "00+05+00" for 5 minutes.
+  setHoverDuration(
+    pointId: string,
+    eventId: string,
+    duration: string,
+  ): Promise<void> {
+    return this.setEventAttribute(
+      pointId,
+      eventId,
+      HoverAttribute.Duration.id,
+      HoverAttribute.Duration.type,
+      duration,
+    );
+  }
+
+  // Hover height AGL on the point's event, e.g. "50A" for 50 feet.
+  setHoverHeight(
+    pointId: string,
+    eventId: string,
+    heightAgl: string,
+  ): Promise<void> {
+    return this.setEventAttribute(
+      pointId,
+      eventId,
+      HoverAttribute.Height.id,
+      HoverAttribute.Height.type,
+      heightAgl,
+    );
+  }
+
+  // Applies a hover to a route point: sets its type, then writes the duration and
+  // height onto the hover event the service creates in response.
+  async setPointHover(
+    pointId: string,
+    duration: string,
+    heightAgl: string,
+  ): Promise<void> {
+    await this.setPointTypeToHover(pointId);
+    const eventId = await this.getEventId(pointId);
+    if (!eventId) throw new Error(`No hover event created for point ${pointId}`);
+    await this.setHoverDuration(pointId, eventId, duration);
+    await this.setHoverHeight(pointId, eventId, heightAgl);
   }
 
   // Convenience bootstrap: create the demo's single mission and route.

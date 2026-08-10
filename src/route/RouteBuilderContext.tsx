@@ -3,6 +3,7 @@ import {
   useContext,
   useMemo,
   useReducer,
+  useRef,
   type ReactNode,
 } from 'react';
 import type { LatLng } from '@/types/proto';
@@ -179,7 +180,12 @@ export const RouteBuilderProvider = ({
     placing: false,
   });
 
-  const { addPoint } = useMissionSession();
+  const { addPoint, setHover, clearHover } = useMissionSession();
+
+  // Always-current view of the route so imperative action handlers can read a
+  // waypoint's backend id and existing actions without stale-closure risk.
+  const routeRef = useRef(state.route);
+  routeRef.current = state.route;
 
   const actions = useMemo(
     () => ({
@@ -204,14 +210,44 @@ export const RouteBuilderProvider = ({
         dispatch({ type: 'updateWaypoint', id, patch }),
       selectWaypoint: (id: string | null) => dispatch({ type: 'selectWaypoint', id }),
       setPlacing: (value: boolean) => dispatch({ type: 'setPlacing', value }),
-      addAction: (waypointId: string, actionType: WaypointActionType, params?: ActionParams) =>
-        dispatch({ type: 'addAction', waypointId, actionType, params }),
-      updateAction: (waypointId: string, actionId: string, params: ActionParams) =>
-        dispatch({ type: 'updateAction', waypointId, actionId, params }),
-      removeAction: (waypointId: string, actionId: string) =>
-        dispatch({ type: 'removeAction', waypointId, actionId }),
+      addAction: (waypointId: string, actionType: WaypointActionType, params?: ActionParams) => {
+        const wp = routeRef.current.waypoints.find((w) => w.id === waypointId);
+        const already = (wp?.actions ?? []).some((a) => a.type === actionType);
+        dispatch({ type: 'addAction', waypointId, actionType, params });
+        // Mirror the hover to MsnSvr: set the point type, dwell time and height.
+        // The route calc picks up the change and recalculates automatically.
+        if (actionType === 'hover' && wp?.serverId && !already) {
+          const p = { ...defaultParams('hover', wp), ...params };
+          setHover(wp.serverId, p.durationSec ?? 0, p.altitudeFt ?? 0).catch((e) =>
+            console.error('[msnsvr] setPointHover failed', e),
+          );
+        }
+      },
+      updateAction: (waypointId: string, actionId: string, params: ActionParams) => {
+        const wp = routeRef.current.waypoints.find((w) => w.id === waypointId);
+        const action = (wp?.actions ?? []).find((a) => a.id === actionId);
+        dispatch({ type: 'updateAction', waypointId, actionId, params });
+        // Re-push the hover with its edited values so a recalc reflects them.
+        if (action?.type === 'hover' && wp?.serverId) {
+          const p = { ...action.params, ...params };
+          setHover(wp.serverId, p.durationSec ?? 0, p.altitudeFt ?? 0).catch((e) =>
+            console.error('[msnsvr] setPointHover failed', e),
+          );
+        }
+      },
+      removeAction: (waypointId: string, actionId: string) => {
+        const wp = routeRef.current.waypoints.find((w) => w.id === waypointId);
+        const action = (wp?.actions ?? []).find((a) => a.id === actionId);
+        dispatch({ type: 'removeAction', waypointId, actionId });
+        // Revert the point to a normal turn so the recalc drops the hover.
+        if (action?.type === 'hover' && wp?.serverId) {
+          clearHover(wp.serverId).catch((e) =>
+            console.error('[msnsvr] clearHover failed', e),
+          );
+        }
+      },
     }),
-    [addPoint],
+    [addPoint, setHover, clearHover],
   );
 
   const value = useMemo<RouteBuilderValue>(

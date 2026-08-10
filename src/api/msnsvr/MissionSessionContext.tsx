@@ -36,6 +36,16 @@ const altitudeFeetFrom = (raw: string): number | undefined => {
   return Math.round(feet);
 };
 
+// Seconds → the service's "hh+mm+ss" TimeDelta string, e.g. 300 → "00+05+00".
+const toHoverDuration = (seconds: number): string => {
+  const total = Math.max(0, Math.round(seconds));
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${pad(Math.floor(total / 3600))}+${pad(Math.floor((total % 3600) / 60))}+${pad(total % 60)}`;
+};
+
+// Feet AGL → the service's AltitudeAGL string, e.g. 50 → "50A".
+const toHoverHeight = (feet: number): string => `${Math.round(feet)}A`;
+
 export interface MissionSession {
   /** Backend-assigned mission GUID. */
   missionId: string;
@@ -46,6 +56,10 @@ export interface MissionSession {
   ready: boolean;
   /** Appends a route point, sets its coordinate, reads its planned altitude. */
   addPoint: (position: LatLng) => Promise<AddedPoint>;
+  /** Turns a point into a hover with the given dwell time and height AGL. */
+  setHover: (pointId: string, durationSec: number, heightFt: number) => Promise<void>;
+  /** Reverts a hover point back to a normal turn point. */
+  clearHover: (pointId: string) => Promise<void>;
   /** Runs a calculation and returns the given attributes per point, keyed by point GUID. */
   calculatePoints: (
     pointIds: string[],
@@ -112,6 +126,35 @@ export const MissionSessionProvider = ({ children }: { children: ReactNode }) =>
     return run;
   }, []);
 
+  const setHover = useCallback(
+    (pointId: string, durationSec: number, heightFt: number): Promise<void> => {
+      const run = queue.current
+        .catch(() => {})
+        .then(async () => {
+          await readyRef.current;
+          await missionClient.setPointHover(
+            pointId,
+            toHoverDuration(durationSec),
+            toHoverHeight(heightFt),
+          );
+        });
+      queue.current = run;
+      return run;
+    },
+    [],
+  );
+
+  const clearHover = useCallback((pointId: string): Promise<void> => {
+    const run = queue.current
+      .catch(() => {})
+      .then(async () => {
+        await readyRef.current;
+        await missionClient.setPointTypeToNormalTurn(pointId);
+      });
+    queue.current = run;
+    return run;
+  }, []);
+
   const calculatePoints = useCallback(
     (pointIds: string[], attributeIds: string[]): Promise<Record<string, Record<string, string>>> => {
       const run = queue.current
@@ -137,8 +180,18 @@ export const MissionSessionProvider = ({ children }: { children: ReactNode }) =>
   );
 
   const value = useMemo<MissionSession>(
-    () => ({ missionId, routeId, status, error, ready: status === 'ready', addPoint, calculatePoints }),
-    [missionId, routeId, status, error, addPoint, calculatePoints],
+    () => ({
+      missionId,
+      routeId,
+      status,
+      error,
+      ready: status === 'ready',
+      addPoint,
+      setHover,
+      clearHover,
+      calculatePoints,
+    }),
+    [missionId, routeId, status, error, addPoint, setHover, clearHover, calculatePoints],
   );
 
   return <MissionSessionContext.Provider value={value}>{children}</MissionSessionContext.Provider>;

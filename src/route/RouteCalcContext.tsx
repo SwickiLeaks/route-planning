@@ -86,10 +86,15 @@ export const RouteCalcProvider = ({ children }: { children: ReactNode }) => {
 
   const waypoints = route.waypoints;
   // Recalculate when a waypoint is added, removed, or edited (coordinate/altitude/
-  // backend id). Sorted so it's order-independent: pure re-ordering does NOT
-  // trigger a recalc — that gets its own backend handling later.
+  // backend id) or its hover changes. Sorted so it's order-independent: pure
+  // re-ordering does NOT trigger a recalc — that gets its own backend handling later.
   const signature = waypoints
-    .map((w) => `${w.id}:${w.serverId ?? ''}:${w.position.lat},${w.position.lng}:${w.altitudeFt ?? ''}`)
+    .map((w) => {
+      const acts = (w.actions ?? [])
+        .map((a) => `${a.type}/${a.params?.durationSec ?? ''}/${a.params?.altitudeFt ?? ''}`)
+        .join(',');
+      return `${w.id}:${w.serverId ?? ''}:${w.position.lat},${w.position.lng}:${w.altitudeFt ?? ''}:${acts}`;
+    })
     .sort()
     .join('|');
   // Need at least a leg, and every point mirrored to the backend.

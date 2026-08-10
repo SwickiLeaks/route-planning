@@ -124,7 +124,7 @@ const ActionsPanel = ({ waypoint }: { waypoint: BuilderWaypoint }) => {
         />
         <TextField
           size="small"
-          label="Altitude"
+          label="Height"
           value={p.altitudeFt ?? ''}
           onChange={(e) => updateAction(waypoint.id, hover.id, { altitudeFt: toInt(e.target.value) })}
           slotProps={{ input: unit('ft') }}
