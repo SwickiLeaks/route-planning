@@ -2,6 +2,7 @@ import Box from '@mui/material/Box';
 import { glassPane } from '@/components/shared/hudStyle';
 import { colors } from '@/theme/tokens';
 import RouteBar from '@/components/builder/RouteBar';
+import PlatformSelect from '@/components/controls/PlatformSelect';
 import { SIDE_PANELS } from '@/components/controls/sidePanelRegistry';
 import { usePanels } from '@/components/controls/PanelContext';
 
@@ -78,6 +79,8 @@ const ControlBar = ({ faded = false }: { faded?: boolean }) => {
           }}
         >
           <RouteBar />
+          <Box sx={{ width: '1px', alignSelf: 'stretch', bgcolor: 'rgba(255,255,255,0.1)', mx: 0.25 }} />
+          <PlatformSelect />
           <Box sx={{ width: '1px', alignSelf: 'stretch', bgcolor: 'rgba(255,255,255,0.1)', mx: 0.25 }} />
           {SIDE_PANELS.map((p) => (
             <PanelButton
