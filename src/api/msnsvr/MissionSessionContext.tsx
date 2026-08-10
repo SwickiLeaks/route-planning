@@ -36,12 +36,9 @@ const altitudeFeetFrom = (raw: string): number | undefined => {
   return Math.round(feet);
 };
 
-// Seconds → the service's "hh+mm+ss" TimeDelta string, e.g. 300 → "00+05+00".
-const toHoverDuration = (seconds: number): string => {
-  const total = Math.max(0, Math.round(seconds));
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${pad(Math.floor(total / 3600))}+${pad(Math.floor((total % 3600) / 60))}+${pad(total % 60)}`;
-};
+// Seconds → the service's TimeDelta string, e.g. 120 → "120 sec". (The hh+mm+ss
+// form is only for the user-facing display, not the value sent to the service.)
+const toHoverDuration = (seconds: number): string => `${Math.max(0, Math.round(seconds))} sec`;
 
 // Feet AGL → the service's AltitudeAGL string, e.g. 50 → "50A".
 const toHoverHeight = (feet: number): string => `${Math.round(feet)}A`;
