@@ -3,6 +3,8 @@ import { MissionSessionProvider, useMsnHandshake } from "@/api/hooks";
 import ControlBar from "@/components/controls/ControlBar";
 import { PanelProvider } from "@/components/controls/PanelContext";
 import MapView from "@/components/map/MapView";
+import MapDimmer from "@/components/map/MapDimmer";
+import { MapSettingsProvider } from "@/components/map/MapSettingsContext";
 import RouteHud from "@/components/hud/RouteHud";
 import { useRoutes } from "@/hooks";
 import { useRouteCalculation } from "@/calc/useRouteCalculation";
@@ -21,28 +23,31 @@ const DashboardContent = () => {
 
   return (
     <PanelProvider>
-      <main style={{ position: "relative", height: "100%" }}>
-        <MapView
-          routes={[route]}
-          activeRoute={route}
-          calc={calc.data}
-          calculating={calculating}
-          placing={placing}
-          onMapClick={(lngLat) =>
-            placing ? addWaypoint(lngLat) : selectWaypoint(null)
-          }
-          onInteractionChange={setMapInteracting}
-        />
-        <ControlBar faded={mapInteracting} />
-        {calc.data && (
-          <RouteHud
-            route={route}
+      <MapSettingsProvider>
+        <main style={{ position: "relative", height: "100%" }}>
+          <MapView
+            routes={[route]}
+            activeRoute={route}
             calc={calc.data}
             calculating={calculating}
-            faded={mapInteracting}
+            placing={placing}
+            onMapClick={(lngLat) =>
+              placing ? addWaypoint(lngLat) : selectWaypoint(null)
+            }
+            onInteractionChange={setMapInteracting}
           />
-        )}
-      </main>
+          <MapDimmer />
+          <ControlBar faded={mapInteracting} />
+          {calc.data && (
+            <RouteHud
+              route={route}
+              calc={calc.data}
+              calculating={calculating}
+              faded={mapInteracting}
+            />
+          )}
+        </main>
+      </MapSettingsProvider>
     </PanelProvider>
   );
 };

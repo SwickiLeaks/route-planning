@@ -1,9 +1,9 @@
 import type { ReactElement, ReactNode } from 'react';
 import AddLocationAltIcon from '@mui/icons-material/AddLocationAlt';
-import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
+import MapIcon from '@mui/icons-material/Map';
 import StorageIcon from '@mui/icons-material/Storage';
 import WaypointCreatorPane from '@/components/builder/WaypointCreatorPane';
-import RouteManagerPane from '@/components/builder/RouteManagerPane';
+import MapControlsPane from '@/components/controls/MapControlsPane';
 import { RouteTabularContainer } from '@/components/builder/route-tabular/route-tabular-container';
 
 export interface SidePanel {
@@ -23,10 +23,10 @@ export const SIDE_PANELS: SidePanel[] = [
     content: <WaypointCreatorPane />,
   },
   {
-    id: 'routes',
-    label: 'Routes',
-    icon: <FormatListBulletedIcon fontSize="small" />,
-    content: <RouteManagerPane />,
+    id: 'map',
+    label: 'Map',
+    icon: <MapIcon fontSize="small" />,
+    content: <MapControlsPane />,
   },
   {
     id: 'route-tabular',
