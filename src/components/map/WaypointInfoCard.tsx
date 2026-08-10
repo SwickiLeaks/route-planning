@@ -50,34 +50,28 @@ const DetailsPanel = ({ waypoint }: { waypoint: BuilderWaypoint }) => {
   const [alt, setAlt] = useState(waypoint.altitudeFt != null ? String(waypoint.altitudeFt) : '');
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75, p: '8px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.14)', bgcolor: 'rgba(255,255,255,0.03)' }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-        <TuneIcon sx={{ fontSize: 16, color: colors.accent }} />
-        <Box sx={{ flex: 1, fontSize: 12.5, fontWeight: 600, color: colors.white }}>Details</Box>
-      </Box>
-      <Box sx={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: 0.75 }}>
-        <TextField
-          size="small"
-          label="Name"
-          value={name}
-          onChange={(e) => {
-            setName(e.target.value);
-            if (e.target.value.trim()) updateWaypoint(waypoint.id, { name: e.target.value });
-          }}
-          sx={{ minWidth: 0 }}
-        />
-        <TextField
-          size="small"
-          label="Altitude"
-          value={alt}
-          onChange={(e) => {
-            setAlt(e.target.value);
-            updateWaypoint(waypoint.id, { altitudeFt: toInt(e.target.value) });
-          }}
-          slotProps={{ input: unit('ft') }}
-          sx={{ minWidth: 0 }}
-        />
-      </Box>
+    <Box sx={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: 0.75 }}>
+      <TextField
+        size="small"
+        label="Name"
+        value={name}
+        onChange={(e) => {
+          setName(e.target.value);
+          if (e.target.value.trim()) updateWaypoint(waypoint.id, { name: e.target.value });
+        }}
+        sx={{ minWidth: 0 }}
+      />
+      <TextField
+        size="small"
+        label="Altitude"
+        value={alt}
+        onChange={(e) => {
+          setAlt(e.target.value);
+          updateWaypoint(waypoint.id, { altitudeFt: toInt(e.target.value) });
+        }}
+        slotProps={{ input: unit('ft') }}
+        sx={{ minWidth: 0 }}
+      />
     </Box>
   );
 };
