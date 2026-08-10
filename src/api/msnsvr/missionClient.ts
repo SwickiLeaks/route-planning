@@ -624,6 +624,11 @@ export class MissionClient {
     return this.getPointAttribute(pointId, PointAttribute.Altitude.id);
   }
 
+  // The point's planned airspeed value, e.g. "…;raw51.44 m/s Knot".
+  getPointSpeed(pointId: string): Promise<string> {
+    return this.getPointAttribute(pointId, PointAttribute.Speed.id);
+  }
+
   // The point's usage type, e.g. "…;RotaryWingDelay" for a hover, "…;Turn" for a
   // normal point.
   getPointType(pointId: string): Promise<string> {

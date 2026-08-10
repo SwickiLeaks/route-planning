@@ -27,7 +27,6 @@ export const RouteTabularProvider = (props: { children: React.ReactNode }) => {
   const [columnVisibility, setColumnVisibility] =
     useState<RouteTabularColumnVisibility>({
       distanceRem: false,
-      distanceTotal: false,
       fuelEnroute: false,
       fuelTotal: false,
       name: false,

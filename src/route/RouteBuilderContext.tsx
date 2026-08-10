@@ -217,14 +217,13 @@ export const RouteBuilderProvider = ({
         const id = uid('wp');
         dispatch({ type: 'addWaypoint', id, position, name, altitudeFt });
         // Mirror the add to MsnSvr (create point + coordinate) and record the GUID
-        // plus the service's default planned altitude.
+        // plus the service's default planned altitude and airspeed.
         addPoint(position)
-          .then(({ pointId, altitudeFt: planned, hover }) => {
-            dispatch({
-              type: 'updateWaypoint',
-              id,
-              patch: planned != null ? { serverId: pointId, altitudeFt: planned } : { serverId: pointId },
-            });
+          .then(({ pointId, altitudeFt: planned, speedKts, hover }) => {
+            const patch: Partial<BuilderWaypoint> = { serverId: pointId };
+            if (planned != null) patch.altitudeFt = planned;
+            if (speedKts != null) patch.speedKts = speedKts;
+            dispatch({ type: 'updateWaypoint', id, patch });
             // The service defaulted this point to a hover — reflect it (with the
             // service's own dwell/height) in the UI. The backend already has it, so
             // no push is needed; adding the action triggers a recalc on its own.

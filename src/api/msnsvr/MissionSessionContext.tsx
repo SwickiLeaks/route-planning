@@ -19,9 +19,26 @@ export interface AddedPoint {
   pointId: string;
   /** Planned altitude in feet from the service, if it returned one. */
   altitudeFt?: number;
+  /** Planned airspeed in knots from the service, if it returned one. */
+  speedKts?: number;
   /** Present when the service created this point as a hover by default. */
   hover?: { durationSec?: number; heightFt?: number };
 }
+
+const MS_TO_KNOTS = 1.943844;
+
+// Airspeed comes back like "…;raw51.44 m/s Knot": SI metres-per-second after the
+// semicolon. Parse the magnitude and convert to whole knots.
+const airspeedKnotsFrom = (raw: string): number | undefined => {
+  const value = raw.includes(';') ? raw.slice(raw.indexOf(';') + 1) : raw;
+  const match = value.match(/(-?\d+(?:\.\d+)?)\s*([a-zA-Z]+)?/);
+  if (!match) return undefined;
+  const magnitude = Number(match[1]);
+  if (!Number.isFinite(magnitude)) return undefined;
+  const unit = (match[2] ?? '').toLowerCase();
+  const knots = unit.startsWith('m') ? magnitude * MS_TO_KNOTS : magnitude;
+  return Math.round(knots);
+};
 
 // The full attribute set to stamp onto one fixed backend slot during a reorder.
 export interface PointReorderUpdate {
@@ -166,6 +183,13 @@ export const MissionSessionProvider = ({ children }: { children: ReactNode }) =>
         } catch (e) {
           console.error('[msnsvr] getPointPlannedAltitude failed', e);
         }
+        // Read the service's default planned airspeed (knots) for this point.
+        let speedKts: number | undefined;
+        try {
+          speedKts = airspeedKnotsFrom(await missionClient.getPointSpeed(pointId));
+        } catch (e) {
+          console.error('[msnsvr] getPointSpeed failed', e);
+        }
         // The service may create a point as a hover by default (a hover event is
         // already on it). Detect that and read its height/duration so the UI can
         // reflect the hover action, with its real values, without the user adding it.
@@ -181,7 +205,7 @@ export const MissionSessionProvider = ({ children }: { children: ReactNode }) =>
         } catch (e) {
           console.error('[msnsvr] getPointHover failed', e);
         }
-        return { pointId, altitudeFt, hover };
+        return { pointId, altitudeFt, speedKts, hover };
       });
     queue.current = run;
     return run;

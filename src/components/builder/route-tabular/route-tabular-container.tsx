@@ -23,7 +23,7 @@ export function RouteTabularContainer(): React.JSX.Element {
     fuelEnroute: value(wp.id, CalcPointAttribute.LegFuel) ?? PENDING,
     fuelTotal: PENDING,
     fuelRem: PENDING,
-    grndSpd: PENDING,
+    grndSpd: wp.speedKts != null ? `${wp.speedKts} kts` : PENDING,
     trueCourse: PENDING,
   }));
 

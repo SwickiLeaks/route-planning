@@ -18,6 +18,8 @@ export interface BuilderWaypoint extends Waypoint {
   actions?: WaypointAction[];
   /** Backend-assigned RoutePoint GUID, set once synced to MsnSvr. */
   serverId?: string;
+  /** Planned airspeed in knots, read from the service on creation. */
+  speedKts?: number;
 }
 
 export interface BuilderRoute extends Route {
