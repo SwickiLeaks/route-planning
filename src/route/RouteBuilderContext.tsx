@@ -7,7 +7,7 @@ import {
   type ReactNode,
 } from 'react';
 import type { LatLng } from '@/types/proto';
-import { useMissionSession } from '@/api/msnsvr/MissionSessionContext';
+import { useMissionSession, type PointReorderUpdate } from '@/api/msnsvr/MissionSessionContext';
 import type {
   ActionParams,
   BuilderRoute,
@@ -43,6 +43,29 @@ const arrayMove = <T,>(list: T[], from: number, to: number): T[] => {
   const [moved] = next.splice(from, 1);
   next.splice(to, 0, moved);
   return next;
+};
+
+// Reorders waypoint DATA while keeping each backend serverId bound to its slot
+// (position). The service can't move points, so a UI reorder is realised by
+// swapping the point *values* between the fixed backend slots — see moveWaypoint.
+const applyReorder = (
+  waypoints: BuilderWaypoint[],
+  from: number,
+  to: number,
+): BuilderWaypoint[] => {
+  const serverIds = waypoints.map((w) => w.serverId);
+  return arrayMove(waypoints, from, to).map((w, i) => ({ ...w, serverId: serverIds[i] }));
+};
+
+// The hover a waypoint carries, resolved for the backend (with default fill).
+const hoverUpdate = (wp: BuilderWaypoint): { durationSec: number; heightFt: number } | null => {
+  const hover = (wp.actions ?? []).find((a) => a.type === 'hover');
+  if (!hover) return null;
+  const dp = defaultParams('hover');
+  return {
+    durationSec: hover.params?.durationSec ?? dp.durationSec ?? 0,
+    heightFt: hover.params?.altitudeFt ?? dp.altitudeFt ?? 0,
+  };
 };
 
 const mapWaypoint = (
@@ -92,7 +115,7 @@ const reducer = (state: State, action: Action): State => {
         ...state,
         route: {
           ...route,
-          waypoints: arrayMove(route.waypoints, action.from, action.to),
+          waypoints: applyReorder(route.waypoints, action.from, action.to),
         },
       };
 
@@ -180,7 +203,8 @@ export const RouteBuilderProvider = ({
     placing: false,
   });
 
-  const { addPoint, setHover, setHoverDuration, setHoverHeight, clearHover } = useMissionSession();
+  const { addPoint, setHover, setHoverDuration, setHoverHeight, clearHover, reorderPoints } =
+    useMissionSession();
 
   // Always-current view of the route so imperative action handlers can read a
   // waypoint's backend id and existing actions without stale-closure risk.
@@ -216,7 +240,32 @@ export const RouteBuilderProvider = ({
           .catch((e) => console.error('[msnsvr] addPointToCurrentRoute failed', e));
       },
       removeWaypoint: (id: string) => dispatch({ type: 'removeWaypoint', id }),
-      moveWaypoint: (from: number, to: number) => dispatch({ type: 'moveWaypoint', from, to }),
+      moveWaypoint: (from: number, to: number) => {
+        if (from === to) return;
+        // Data moves; serverIds stay pinned to their slots. Every slot in the
+        // touched range now holds different data, so re-stamp those fixed backend
+        // points with the coordinate/altitude/event they should carry. The sorted
+        // calc signature changes (each id now pairs with a new serverId), so a
+        // recalc runs once the swaps land.
+        const next = applyReorder(routeRef.current.waypoints, from, to);
+        dispatch({ type: 'moveWaypoint', from, to });
+        const lo = Math.min(from, to);
+        const hi = Math.max(from, to);
+        const updates: PointReorderUpdate[] = [];
+        for (let i = lo; i <= hi; i += 1) {
+          const w = next[i];
+          if (!w?.serverId) continue;
+          updates.push({
+            serverId: w.serverId,
+            position: w.position,
+            altitudeFt: w.altitudeFt,
+            hover: hoverUpdate(w),
+          });
+        }
+        if (updates.length) {
+          reorderPoints(updates).catch((e) => console.error('[msnsvr] reorder sync failed', e));
+        }
+      },
       updateWaypoint: (id: string, patch: Partial<BuilderWaypoint>) =>
         dispatch({ type: 'updateWaypoint', id, patch }),
       selectWaypoint: (id: string | null) => dispatch({ type: 'selectWaypoint', id }),
@@ -266,7 +315,7 @@ export const RouteBuilderProvider = ({
         }
       },
     }),
-    [addPoint, setHover, setHoverDuration, setHoverHeight, clearHover],
+    [addPoint, setHover, setHoverDuration, setHoverHeight, clearHover, reorderPoints],
   );
 
   const value = useMemo<RouteBuilderValue>(

@@ -23,6 +23,16 @@ export interface AddedPoint {
   hover?: { durationSec?: number; heightFt?: number };
 }
 
+// The full attribute set to stamp onto one fixed backend slot during a reorder.
+export interface PointReorderUpdate {
+  /** The backend point (slot) to overwrite. */
+  serverId: string;
+  position: LatLng;
+  altitudeFt?: number;
+  /** A hover to apply, or null to make the slot a normal (non-hover) point. */
+  hover?: { durationSec: number; heightFt: number } | null;
+}
+
 // A hover duration comes back as a TimeDelta. Handle the "hh+mm+ss"/"hh:mm:ss"
 // forms as well as a plain "<n> <unit>" (sec/min/hr); default the unit to seconds.
 const hoverSecondsFrom = (raw: string): number | undefined => {
@@ -70,6 +80,9 @@ const toHoverDuration = (seconds: number): string => {
 // Feet AGL → the service's AltitudeAGL string, e.g. 50 → "50A".
 const toHoverHeight = (feet: number): string => `${Math.round(feet)}A`;
 
+// Feet AGL → the service's InputAltitude string, e.g. 500 → "500 A".
+const toMsnSvrAltitude = (feet: number): string => `${Math.round(feet)} A`;
+
 export interface MissionSession {
   /** Backend-assigned mission GUID. */
   missionId: string;
@@ -88,6 +101,9 @@ export interface MissionSession {
   setHoverHeight: (pointId: string, heightFt: number) => Promise<void>;
   /** Reverts a hover point back to a normal turn point. */
   clearHover: (pointId: string) => Promise<void>;
+  /** Overwrites fixed backend slots to realise a UI reorder (the service can't
+   *  move points, so we swap their attribute values instead). */
+  reorderPoints: (updates: PointReorderUpdate[]) => Promise<void>;
   /** Runs a calculation and returns the given attributes per point, keyed by point GUID. */
   calculatePoints: (
     pointIds: string[],
@@ -220,6 +236,46 @@ export const MissionSessionProvider = ({ children }: { children: ReactNode }) =>
     return run;
   }, []);
 
+  const reorderPoints = useCallback((updates: PointReorderUpdate[]): Promise<void> => {
+    const run = queue.current
+      .catch(() => {})
+      .then(async () => {
+        await readyRef.current;
+        // Each slot is rewritten in full: coordinate, altitude, and its event
+        // (a hover, or reverted to a normal point). Failures are isolated so one
+        // bad attribute doesn't abort the rest of the swap.
+        for (const u of updates) {
+          try {
+            await missionClient.setPointCoordinate(u.serverId, toMsnSvrCoordinate(u.position));
+          } catch (e) {
+            console.error('[msnsvr] reorder setPointCoordinate failed', e);
+          }
+          if (u.altitudeFt != null) {
+            try {
+              await missionClient.setPointAltitude(u.serverId, toMsnSvrAltitude(u.altitudeFt));
+            } catch (e) {
+              console.error('[msnsvr] reorder setPointAltitude failed', e);
+            }
+          }
+          try {
+            if (u.hover) {
+              await missionClient.setPointHover(
+                u.serverId,
+                toHoverDuration(u.hover.durationSec),
+                toHoverHeight(u.hover.heightFt),
+              );
+            } else {
+              await missionClient.setPointTypeToNormalTurn(u.serverId);
+            }
+          } catch (e) {
+            console.error('[msnsvr] reorder event swap failed', e);
+          }
+        }
+      });
+    queue.current = run;
+    return run;
+  }, []);
+
   const calculatePoints = useCallback(
     (pointIds: string[], attributeIds: string[]): Promise<Record<string, Record<string, string>>> => {
       const run = queue.current
@@ -256,6 +312,7 @@ export const MissionSessionProvider = ({ children }: { children: ReactNode }) =>
       setHoverDuration,
       setHoverHeight,
       clearHover,
+      reorderPoints,
       calculatePoints,
     }),
     [
@@ -268,6 +325,7 @@ export const MissionSessionProvider = ({ children }: { children: ReactNode }) =>
       setHoverDuration,
       setHoverHeight,
       clearHover,
+      reorderPoints,
       calculatePoints,
     ],
   );
