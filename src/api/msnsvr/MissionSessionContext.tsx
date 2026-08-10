@@ -19,7 +19,31 @@ export interface AddedPoint {
   pointId: string;
   /** Planned altitude in feet from the service, if it returned one. */
   altitudeFt?: number;
+  /** Present when the service created this point as a hover by default. */
+  hover?: { durationSec?: number; heightFt?: number };
 }
+
+// A hover duration comes back as a TimeDelta. Handle the "hh+mm+ss"/"hh:mm:ss"
+// forms as well as a plain "<n> <unit>" (sec/min/hr); default the unit to seconds.
+const hoverSecondsFrom = (raw: string): number | undefined => {
+  const value = (raw.includes(';') ? raw.slice(raw.lastIndexOf(';') + 1) : raw)
+    .trim()
+    .replace(/^raw/i, '')
+    .trim();
+  if (!value) return undefined;
+  const parts = value.split(/[+:]/);
+  if (parts.length === 3 && parts.every((p) => /^\d+$/.test(p.trim()))) {
+    const [h, m, s] = parts.map(Number);
+    return h * 3600 + m * 60 + s;
+  }
+  const match = value.match(/(-?\d+(?:\.\d+)?)\s*([a-zA-Z]+)?/);
+  if (!match) return undefined;
+  const magnitude = Number(match[1]);
+  if (!Number.isFinite(magnitude)) return undefined;
+  const unit = (match[2] ?? '').toLowerCase();
+  const factor = unit.startsWith('h') ? 3600 : unit.startsWith('m') ? 60 : 1;
+  return Math.round(magnitude * factor);
+};
 
 const METERS_TO_FEET = 3.280839895;
 
@@ -58,6 +82,10 @@ export interface MissionSession {
   addPoint: (position: LatLng) => Promise<AddedPoint>;
   /** Turns a point into a hover with the given dwell time and height AGL. */
   setHover: (pointId: string, durationSec: number, heightFt: number) => Promise<void>;
+  /** Sets only the dwell time on a point's hover. */
+  setHoverDuration: (pointId: string, durationSec: number) => Promise<void>;
+  /** Sets only the height on a point's hover. */
+  setHoverHeight: (pointId: string, heightFt: number) => Promise<void>;
   /** Reverts a hover point back to a normal turn point. */
   clearHover: (pointId: string) => Promise<void>;
   /** Runs a calculation and returns the given attributes per point, keyed by point GUID. */
@@ -120,7 +148,22 @@ export const MissionSessionProvider = ({ children }: { children: ReactNode }) =>
         } catch (e) {
           console.error('[msnsvr] getPointPlannedAltitude failed', e);
         }
-        return { pointId, altitudeFt };
+        // The service may create a point as a hover by default (a hover event is
+        // already on it). Detect that and read its height/duration so the UI can
+        // reflect the hover action, with its real values, without the user adding it.
+        let hover: AddedPoint['hover'];
+        try {
+          const raw = await missionClient.getPointHover(pointId);
+          if (raw) {
+            hover = {
+              heightFt: altitudeFeetFrom(raw.height),
+              durationSec: hoverSecondsFrom(raw.duration),
+            };
+          }
+        } catch (e) {
+          console.error('[msnsvr] getPointHover failed', e);
+        }
+        return { pointId, altitudeFt, hover };
       });
     queue.current = run;
     return run;
@@ -143,6 +186,28 @@ export const MissionSessionProvider = ({ children }: { children: ReactNode }) =>
     },
     [],
   );
+
+  const setHoverDuration = useCallback((pointId: string, durationSec: number): Promise<void> => {
+    const run = queue.current
+      .catch(() => {})
+      .then(async () => {
+        await readyRef.current;
+        await missionClient.setPointHoverDuration(pointId, toHoverDuration(durationSec));
+      });
+    queue.current = run;
+    return run;
+  }, []);
+
+  const setHoverHeight = useCallback((pointId: string, heightFt: number): Promise<void> => {
+    const run = queue.current
+      .catch(() => {})
+      .then(async () => {
+        await readyRef.current;
+        await missionClient.setPointHoverHeight(pointId, toHoverHeight(heightFt));
+      });
+    queue.current = run;
+    return run;
+  }, []);
 
   const clearHover = useCallback((pointId: string): Promise<void> => {
     const run = queue.current
@@ -188,10 +253,23 @@ export const MissionSessionProvider = ({ children }: { children: ReactNode }) =>
       ready: status === 'ready',
       addPoint,
       setHover,
+      setHoverDuration,
+      setHoverHeight,
       clearHover,
       calculatePoints,
     }),
-    [missionId, routeId, status, error, addPoint, setHover, clearHover, calculatePoints],
+    [
+      missionId,
+      routeId,
+      status,
+      error,
+      addPoint,
+      setHover,
+      setHoverDuration,
+      setHoverHeight,
+      clearHover,
+      calculatePoints,
+    ],
   );
 
   return <MissionSessionContext.Provider value={value}>{children}</MissionSessionContext.Provider>;

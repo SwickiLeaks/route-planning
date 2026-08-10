@@ -86,6 +86,16 @@ export const PointUsageType = {
   Turn: "Turn",
 } as const;
 
+// Attributes read off a point's event to inspect an existing (default) hover.
+export const EventAttribute = {
+  CommandName: "CmdName", // e.g. "…;HTO" — HTO marks a hover event
+  HoverHeight: "HoverHeightEvent", // Length
+  HoverDuration: "HoverManualEventTime", // TimeDelta
+} as const;
+
+// CmdName value that identifies a hover event.
+export const HoverCommandName = "HTO";
+
 // Attributes read from a point's calculated result. Route* / Segment* attributes
 // are cumulative, so the final point in the route carries the route totals.
 export const CalcPointAttribute = {
@@ -429,6 +439,20 @@ export class MissionClient {
     await this.setHoverHeight(pointId, eventId, heightAgl);
   }
 
+  // Sets only the dwell time on a point's existing hover event.
+  async setPointHoverDuration(pointId: string, duration: string): Promise<void> {
+    const eventId = await this.getEventId(pointId);
+    if (!eventId) throw new Error(`No hover event on point ${pointId}`);
+    await this.setHoverDuration(pointId, eventId, duration);
+  }
+
+  // Sets only the height on a point's existing hover event.
+  async setPointHoverHeight(pointId: string, heightAgl: string): Promise<void> {
+    const eventId = await this.getEventId(pointId);
+    if (!eventId) throw new Error(`No hover event on point ${pointId}`);
+    await this.setHoverHeight(pointId, eventId, heightAgl);
+  }
+
   // Convenience bootstrap: create the demo's single mission and route.
   async createMissionAndRoute(): Promise<{
     missionId: string;
@@ -581,6 +605,33 @@ export class MissionClient {
   // The point's planned (default) altitude value, e.g. "1500 A".
   getPointPlannedAltitude(pointId: string): Promise<string> {
     return this.getPointAttribute(pointId, PointAttribute.Altitude.id);
+  }
+
+  // The point's usage type, e.g. "…;RotaryWingDelay" for a hover, "…;Turn" for a
+  // normal point.
+  getPointType(pointId: string): Promise<string> {
+    return this.getPointAttribute(pointId, HoverAttribute.PointType.id);
+  }
+
+  // Reads the point's default hover from its event, if any. Returns null when the
+  // point has no event or its event isn't a hover (CmdName ≠ "HTO"). The height
+  // and duration come back raw (Length / TimeDelta) for the caller to parse.
+  async getPointHover(
+    pointId: string,
+  ): Promise<{ height: string; duration: string } | null> {
+    const eventId = await this.getEventId(pointId);
+    if (!eventId) return null;
+    const command = await this.getEventAttribute(
+      pointId,
+      eventId,
+      EventAttribute.CommandName,
+    );
+    if (parseCalcState(command) !== HoverCommandName) return null;
+    const [height, duration] = await Promise.all([
+      this.getEventAttribute(pointId, eventId, EventAttribute.HoverHeight),
+      this.getEventAttribute(pointId, eventId, EventAttribute.HoverDuration),
+    ]);
+    return { height, duration };
   }
 
   // The last calculated point (which holds the results) for a route point.

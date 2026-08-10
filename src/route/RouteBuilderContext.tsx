@@ -15,7 +15,7 @@ import type {
   WaypointActionType,
 } from '@/route/routeBuilderTypes';
 
-const defaultParams = (type: WaypointActionType, _wp: BuilderWaypoint): ActionParams =>
+const defaultParams = (type: WaypointActionType, _wp?: BuilderWaypoint): ActionParams =>
   type === 'hover' ? { durationSec: 120, altitudeFt: 50 } : {};
 
 let seq = 0;
@@ -180,7 +180,7 @@ export const RouteBuilderProvider = ({
     placing: false,
   });
 
-  const { addPoint, setHover, clearHover } = useMissionSession();
+  const { addPoint, setHover, setHoverDuration, setHoverHeight, clearHover } = useMissionSession();
 
   // Always-current view of the route so imperative action handlers can read a
   // waypoint's backend id and existing actions without stale-closure risk.
@@ -195,13 +195,24 @@ export const RouteBuilderProvider = ({
         // Mirror the add to MsnSvr (create point + coordinate) and record the GUID
         // plus the service's default planned altitude.
         addPoint(position)
-          .then(({ pointId, altitudeFt: planned }) =>
+          .then(({ pointId, altitudeFt: planned, hover }) => {
             dispatch({
               type: 'updateWaypoint',
               id,
               patch: planned != null ? { serverId: pointId, altitudeFt: planned } : { serverId: pointId },
-            }),
-          )
+            });
+            // The service defaulted this point to a hover — reflect it (with the
+            // service's own dwell/height) in the UI. The backend already has it, so
+            // no push is needed; adding the action triggers a recalc on its own.
+            // Only carry values the service actually returned; the reducer fills
+            // any gaps with the hover defaults.
+            if (hover) {
+              const params: ActionParams = {};
+              if (hover.durationSec != null) params.durationSec = hover.durationSec;
+              if (hover.heightFt != null) params.altitudeFt = hover.heightFt;
+              dispatch({ type: 'addAction', waypointId: id, actionType: 'hover', params });
+            }
+          })
           .catch((e) => console.error('[msnsvr] addPointToCurrentRoute failed', e));
       },
       removeWaypoint: (id: string) => dispatch({ type: 'removeWaypoint', id }),
@@ -227,12 +238,20 @@ export const RouteBuilderProvider = ({
         const wp = routeRef.current.waypoints.find((w) => w.id === waypointId);
         const action = (wp?.actions ?? []).find((a) => a.id === actionId);
         dispatch({ type: 'updateAction', waypointId, actionId, params });
-        // Re-push the hover with its edited values so a recalc reflects them.
+        // Push only the hover attribute that changed, so each input is independent.
+        // A recalc follows automatically once the value lands on the backend.
         if (action?.type === 'hover' && wp?.serverId) {
-          const p = { ...action.params, ...params };
-          setHover(wp.serverId, p.durationSec ?? 0, p.altitudeFt ?? 0).catch((e) =>
-            console.error('[msnsvr] setPointHover failed', e),
-          );
+          const serverId = wp.serverId;
+          if (params.durationSec != null) {
+            setHoverDuration(serverId, params.durationSec).catch((e) =>
+              console.error('[msnsvr] setHoverDuration failed', e),
+            );
+          }
+          if (params.altitudeFt != null) {
+            setHoverHeight(serverId, params.altitudeFt).catch((e) =>
+              console.error('[msnsvr] setHoverHeight failed', e),
+            );
+          }
         }
       },
       removeAction: (waypointId: string, actionId: string) => {
@@ -247,7 +266,7 @@ export const RouteBuilderProvider = ({
         }
       },
     }),
-    [addPoint, setHover, clearHover],
+    [addPoint, setHover, setHoverDuration, setHoverHeight, clearHover],
   );
 
   const value = useMemo<RouteBuilderValue>(
