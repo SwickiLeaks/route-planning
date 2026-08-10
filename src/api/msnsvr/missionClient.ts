@@ -67,14 +67,15 @@ export const PointAttribute = {
 const PROPERTY_PREFIX = "PropertyInfo";
 
 // Hover (RotaryWingDelay) attributes. PointType lives on the route point; the
-// dwell Duration and Height live on the hover event the service creates.
+// dwell Duration and Height live on the hover event the service creates. Duration
+// uses the same attribute id we read back (HoverManualEventTime) so set/get agree.
 export const HoverAttribute = {
   PointType: {
     id: `${PROPERTY_PREFIX}PointType`,
     type: "MP.MissionEditor.PointUsageType",
   },
   Duration: {
-    id: `${PROPERTY_PREFIX}Time`,
+    id: "HoverManualEventTime",
     type: "MP.Core.Units.TimeDelta",
   },
   Height: { id: "HoverHeightEvent", type: "MP.Core.Weather.AltitudeAGL" },
