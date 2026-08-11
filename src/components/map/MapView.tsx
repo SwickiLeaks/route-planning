@@ -8,6 +8,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { INITIAL_VIEW, MAX_BOUNDS, buildMapStyle } from '@/map/style';
 import { isWebGLAvailable } from '@/map/webgl';
 import RouteLayers from '@/components/map/RouteLayers';
+import MapDimmerLayer from '@/components/map/MapDimmerLayer';
 import RouteCalcOverlay from '@/components/map/RouteCalcOverlay';
 import MapUnavailable from '@/components/map/MapUnavailable';
 import type { Route } from '@/types/proto';
@@ -108,6 +109,7 @@ const MapView = ({
         }}
         style={{ width: '100%', height: '100%' }}
       >
+        <MapDimmerLayer />
         <RouteLayers routes={routes} />
         {activeRoute && calc && (
           <RouteCalcOverlay route={activeRoute} calc={calc} calculating={calculating} />

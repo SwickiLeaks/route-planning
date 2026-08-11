@@ -20,7 +20,9 @@ interface RouteCalcValue {
   value: (waypointId: string, attributeId: string) => string | undefined;
   /** A calculated attribute from the last point, which carries route totals. */
   total: (attributeId: string) => string | undefined;
-  /** Starting fuel minus the fuel consumed at the last point, formatted (lbs). */
+  /** Starting fuel minus the fuel consumed at a waypoint, formatted (lbs). */
+  fuelRemainingAt: (waypointId: string) => string | undefined;
+  /** Fuel remaining at the last point (i.e. at the end of the route). */
   fuelRemaining: string | undefined;
 }
 
@@ -153,20 +155,28 @@ export const RouteCalcProvider = ({ children }: { children: ReactNode }) => {
     [result, value],
   );
 
-  // Fuel remaining = starting fuel − cumulative fuel consumed at the last point
+  // Fuel remaining = starting fuel − cumulative fuel consumed at the point
   // (StateSegmentFuel). Both are kilograms; display in pounds like other fuel.
-  const fuelRemaining = useMemo<string | undefined>(() => {
-    if (startingFuelKg == null || !result.lastId) return undefined;
-    const rawConsumed = result.points[result.lastId]?.[CalcPointAttribute.SegmentFuel];
-    if (!rawConsumed) return undefined;
-    const consumedKg = leadingNumber(displayValue(rawConsumed));
-    if (consumedKg == null) return undefined;
-    return `${Math.round((startingFuelKg - consumedKg) * KG_TO_LB).toLocaleString()} lbs`;
-  }, [startingFuelKg, result]);
+  const fuelRemainingAt = useCallback(
+    (waypointId: string): string | undefined => {
+      if (startingFuelKg == null) return undefined;
+      const rawConsumed = result.points[waypointId]?.[CalcPointAttribute.SegmentFuel];
+      if (!rawConsumed) return undefined;
+      const consumedKg = leadingNumber(displayValue(rawConsumed));
+      if (consumedKg == null) return undefined;
+      return `${Math.round((startingFuelKg - consumedKg) * KG_TO_LB).toLocaleString()} lbs`;
+    },
+    [startingFuelKg, result],
+  );
+
+  const fuelRemaining = useMemo<string | undefined>(
+    () => (result.lastId ? fuelRemainingAt(result.lastId) : undefined),
+    [fuelRemainingAt, result.lastId],
+  );
 
   const ctx = useMemo<RouteCalcValue>(
-    () => ({ status, value, total, fuelRemaining }),
-    [status, value, total, fuelRemaining],
+    () => ({ status, value, total, fuelRemainingAt, fuelRemaining }),
+    [status, value, total, fuelRemainingAt, fuelRemaining],
   );
 
   return <RouteCalcContext.Provider value={ctx}>{children}</RouteCalcContext.Provider>;

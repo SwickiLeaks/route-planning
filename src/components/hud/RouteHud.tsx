@@ -139,11 +139,10 @@ const RouteHud = ({ route, calc, calculating = false, faded = false }: RouteHudP
         )}
 
         <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', justifyContent: 'center', pointerEvents: faded || collapsed ? 'none' : 'auto', ...dim }}>
-          <MetricTile label="Distance" value={total(CalcPointAttribute.RouteDistance) ?? PENDING} />
+          <MetricTile label="Route Distance" value={total(CalcPointAttribute.RouteDistance) ?? PENDING} />
           <MetricTile label="Route Time" value={total(CalcPointAttribute.RouteTime) ?? PENDING} accent={colors.accent} />
-          <MetricTile label="Fuel Burn" value={total(CalcPointAttribute.SegmentFuel) ?? PENDING} accent={colors.gold} />
-          <MetricTile label="Remaining" value={fuelRemaining ?? PENDING} />
-          <MetricTile label="Avg Flow" value={PENDING} unit="lb/hr" />
+          <MetricTile label="Route Fuel Burn" value={total(CalcPointAttribute.SegmentFuel) ?? PENDING} accent={colors.gold} />
+          <MetricTile label="Route Fuel Remaining" value={fuelRemaining ?? PENDING} />
         </Box>
 
         <Box sx={{ ...glassPane, width: 'fit-content', maxWidth: '100%', px: 1.5, py: 1.25, pointerEvents: faded || collapsed ? 'none' : 'auto', ...dim }}>

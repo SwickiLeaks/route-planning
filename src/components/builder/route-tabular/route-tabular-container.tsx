@@ -8,7 +8,7 @@ import { PENDING } from "@/components/shared/hudStyle";
 
 export function RouteTabularContainer(): React.JSX.Element {
   const { route, selectedWaypointId, selectWaypoint } = useRouteBuilder();
-  const { value } = useRouteCalc();
+  const { value, fuelRemainingAt } = useRouteCalc();
 
   // Enroute columns are per-leg (StateLegTime/StateLegDist); total columns are the
   // calculated point's cumulative StateRouteTime/StateRouteDistance. The remaining
@@ -22,7 +22,7 @@ export function RouteTabularContainer(): React.JSX.Element {
     distanceTotal: value(wp.id, CalcPointAttribute.RouteDistance) ?? PENDING,
     fuelEnroute: value(wp.id, CalcPointAttribute.LegFuel) ?? PENDING,
     fuelTotal: PENDING,
-    fuelRem: PENDING,
+    fuelRem: fuelRemainingAt(wp.id) ?? PENDING,
     grndSpd: wp.speedKts != null ? `${wp.speedKts} kts` : PENDING,
     trueCourse: PENDING,
   }));

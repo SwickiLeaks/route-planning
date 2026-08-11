@@ -3,7 +3,6 @@ import { MissionSessionProvider, useMsnHandshake } from "@/api/hooks";
 import ControlBar from "@/components/controls/ControlBar";
 import { PanelProvider } from "@/components/controls/PanelContext";
 import MapView from "@/components/map/MapView";
-import MapDimmer from "@/components/map/MapDimmer";
 import { MapSettingsProvider } from "@/components/map/MapSettingsContext";
 import RouteHud from "@/components/hud/RouteHud";
 import { useRoutes } from "@/hooks";
@@ -36,7 +35,6 @@ const DashboardContent = () => {
             }
             onInteractionChange={setMapInteracting}
           />
-          <MapDimmer />
           <ControlBar faded={mapInteracting} />
           {calc.data && (
             <RouteHud
