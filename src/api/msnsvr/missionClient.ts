@@ -629,11 +629,11 @@ export class MissionClient {
     return readAttribute(res, attributeId);
   }
 
-  // The route's starting fuel weight, parsed out of the vehicle's WeightTotalizer
-  // XML (<TotalMassFuel><value>…</value>). Returns "" if not found.
+  // The route's starting fuel weight (kg), parsed out of the vehicle's
+  // WeightTotalizer XML (<TotalFuel><max>…</max>). Returns "" if not found.
   async getStartingFuelWeight(): Promise<string> {
     const xml = await this.getVehicleAttribute(VehicleAttribute.WeightTotalizer);
-    return xmlValue(xml, "<TotalMassFuel>");
+    return xmlValue(xml, "<TotalFuel>", "<max>");
   }
 
 
@@ -869,16 +869,16 @@ export class MissionClient {
 const readAttribute = (list: AttributeInfoList, attributeId: string): string =>
   list.attributes.find((a) => a.name === attributeId)?.value ?? "";
 
-// Extracts `<element>…<value>X</value>` from a WeightTotalizer-style XML blob,
-// mirroring the reference client's getXmlValue. Returns "" if not found.
-const xmlValue = (xml: string, element: string): string => {
+// Extracts the text inside `inner` (e.g. "<max>") nested under `element` (e.g.
+// "<TotalFuel>") from a WeightTotalizer-style XML blob. Returns "" if not found.
+const xmlValue = (xml: string, element: string, inner: string): string => {
   if (!xml) return "";
   const elementIdx = xml.indexOf(element);
   if (elementIdx < 0) return "";
-  const valueStart = xml.indexOf("<value>", elementIdx);
-  if (valueStart < 0) return "";
-  const start = valueStart + "<value>".length;
-  const end = xml.indexOf("</value>", start);
+  const innerStart = xml.indexOf(inner, elementIdx);
+  if (innerStart < 0) return "";
+  const start = innerStart + inner.length;
+  const end = xml.indexOf(inner.replace("<", "</"), start);
   return end > 0 ? xml.substring(start, end) : "";
 };
 
