@@ -69,7 +69,7 @@ const HudHandle = ({
 // Bottom HUD: a cluster of glass panes layered over the map.
 const RouteHud = ({ route, calc, calculating = false, faded = false }: RouteHudProps) => {
   const [collapsed, setCollapsed] = useState(false);
-  const { total } = useRouteCalc();
+  const { total, fuelRemaining } = useRouteCalc();
 
   const dim = {
     opacity: calculating ? 0.55 : 1,
@@ -142,7 +142,7 @@ const RouteHud = ({ route, calc, calculating = false, faded = false }: RouteHudP
           <MetricTile label="Distance" value={total(CalcPointAttribute.RouteDistance) ?? PENDING} />
           <MetricTile label="Route Time" value={total(CalcPointAttribute.RouteTime) ?? PENDING} accent={colors.accent} />
           <MetricTile label="Fuel Burn" value={total(CalcPointAttribute.SegmentFuel) ?? PENDING} accent={colors.gold} />
-          <MetricTile label="Remaining" value={PENDING} unit="lb" />
+          <MetricTile label="Remaining" value={fuelRemaining ?? PENDING} />
           <MetricTile label="Avg Flow" value={PENDING} unit="lb/hr" />
         </Box>
 

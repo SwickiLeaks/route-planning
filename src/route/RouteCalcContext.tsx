@@ -20,6 +20,8 @@ interface RouteCalcValue {
   value: (waypointId: string, attributeId: string) => string | undefined;
   /** A calculated attribute from the last point, which carries route totals. */
   total: (attributeId: string) => string | undefined;
+  /** Starting fuel minus the fuel consumed at the last point, formatted (lbs). */
+  fuelRemaining: string | undefined;
 }
 
 interface CalcResult {
@@ -60,10 +62,12 @@ const formatNm = (value: string): string => {
   return meters == null ? value : `${(meters / 1852).toFixed(1)} nm`;
 };
 
+const KG_TO_LB = 2.2046226;
+
 // Kilograms → pounds, rounded: "1,234 lbs".
 const formatLbs = (value: string): string => {
   const kg = leadingNumber(value);
-  return kg == null ? value : `${Math.round(kg * 2.2046226).toLocaleString()} lbs`;
+  return kg == null ? value : `${Math.round(kg * KG_TO_LB).toLocaleString()} lbs`;
 };
 
 // Per-attribute display formatting; attributes without an entry show as-is.
@@ -79,7 +83,7 @@ const FORMATTERS: Record<string, (value: string) => string> = {
 // Runs a backend calculation when the route settles and exposes the results.
 export const RouteCalcProvider = ({ children }: { children: ReactNode }) => {
   const { route } = useRouteBuilder();
-  const { ready, calculatePoints } = useMissionSession();
+  const { ready, calculatePoints, startingFuelKg } = useMissionSession();
   const [result, setResult] = useState<CalcResult>({ points: {}, lastId: null });
   const [status, setStatus] = useState<RouteCalcStatus>('idle');
   const runId = useRef(0);
@@ -149,7 +153,21 @@ export const RouteCalcProvider = ({ children }: { children: ReactNode }) => {
     [result, value],
   );
 
-  const ctx = useMemo<RouteCalcValue>(() => ({ status, value, total }), [status, value, total]);
+  // Fuel remaining = starting fuel − cumulative fuel consumed at the last point
+  // (StateSegmentFuel). Both are kilograms; display in pounds like other fuel.
+  const fuelRemaining = useMemo<string | undefined>(() => {
+    if (startingFuelKg == null || !result.lastId) return undefined;
+    const rawConsumed = result.points[result.lastId]?.[CalcPointAttribute.SegmentFuel];
+    if (!rawConsumed) return undefined;
+    const consumedKg = leadingNumber(displayValue(rawConsumed));
+    if (consumedKg == null) return undefined;
+    return `${Math.round((startingFuelKg - consumedKg) * KG_TO_LB).toLocaleString()} lbs`;
+  }, [startingFuelKg, result]);
+
+  const ctx = useMemo<RouteCalcValue>(
+    () => ({ status, value, total, fuelRemaining }),
+    [status, value, total, fuelRemaining],
+  );
 
   return <RouteCalcContext.Provider value={ctx}>{children}</RouteCalcContext.Provider>;
 };

@@ -25,6 +25,15 @@ export interface AddedPoint {
   hover?: { durationSec?: number; heightFt?: number };
 }
 
+// Fuel weight comes back as a bare SI number (kilograms). Parse the magnitude.
+const fuelKgFrom = (raw: string): number | undefined => {
+  const value = raw.includes(';') ? raw.slice(raw.lastIndexOf(';') + 1) : raw;
+  const match = value.replace(/^raw/i, '').match(/-?\d+(?:\.\d+)?/);
+  if (!match) return undefined;
+  const kg = Number(match[0]);
+  return Number.isFinite(kg) ? kg : undefined;
+};
+
 const MS_TO_KNOTS = 1.943844;
 
 // Airspeed comes back like "…;raw51.44 m/s Knot": SI metres-per-second after the
@@ -105,6 +114,8 @@ export interface MissionSession {
   missionId: string;
   /** Backend-assigned route GUID. */
   routeId: string;
+  /** The route's starting fuel weight in kilograms, once read (null until then). */
+  startingFuelKg: number | null;
   status: MissionSessionStatus;
   error: unknown;
   ready: boolean;
@@ -137,6 +148,7 @@ const MissionSessionContext = createContext<MissionSession | null>(null);
 export const MissionSessionProvider = ({ children }: { children: ReactNode }) => {
   const [missionId, setMissionId] = useState('');
   const [routeId, setRouteId] = useState('');
+  const [startingFuelKg, setStartingFuelKg] = useState<number | null>(null);
   const [status, setStatus] = useState<MissionSessionStatus>('initializing');
   const [error, setError] = useState<unknown>(null);
 
@@ -151,9 +163,18 @@ export const MissionSessionProvider = ({ children }: { children: ReactNode }) =>
     started.current = true;
     readyRef.current = missionClient
       .createMissionAndRoute()
-      .then(({ missionId, routeId }) => {
+      .then(async ({ missionId, routeId }) => {
         setMissionId(missionId);
         setRouteId(routeId);
+        // Read the session's starting fuel weight once (constant for the session).
+        try {
+          const raw = await missionClient.getStartingFuelWeight();
+          const kg = fuelKgFrom(raw);
+          console.log('[fuel] starting fuel weight (raw):', raw, '→ kg:', kg);
+          if (kg != null) setStartingFuelKg(kg);
+        } catch (e) {
+          console.error('[fuel] failed to read starting fuel weight', e);
+        }
         setStatus('ready');
       })
       .catch((e) => {
@@ -341,6 +362,7 @@ export const MissionSessionProvider = ({ children }: { children: ReactNode }) =>
     () => ({
       missionId,
       routeId,
+      startingFuelKg,
       status,
       error,
       ready: status === 'ready',
@@ -356,6 +378,7 @@ export const MissionSessionProvider = ({ children }: { children: ReactNode }) =>
     [
       missionId,
       routeId,
+      startingFuelKg,
       status,
       error,
       addPoint,

@@ -94,6 +94,11 @@ export const EventAttribute = {
   HoverDuration: "HoverManualEventTime", // TimeDelta
 } as const;
 
+// Vehicle attribute ids (read from the vehicle under the segment).
+export const VehicleAttribute = {
+  WeightTotalizer: "WeightTotalizer", // XML blob carrying fuel/weight totals
+} as const;
+
 // CmdName value that identifies a hover event.
 export const HoverCommandName = "HTO";
 
@@ -615,6 +620,23 @@ export class MissionClient {
     return readAttribute(res, attributeId);
   }
 
+  // Reads a vehicle attribute. The vehicle is addressed under the segment, using
+  // the segment id as the vehicle id (matching the reference client).
+  async getVehicleAttribute(attributeId: string): Promise<string> {
+    const res = await this.client.getAttributes(
+      this.attributeRequest(this.vehicleAsParentId(), attributeId, "", null),
+    );
+    return readAttribute(res, attributeId);
+  }
+
+  // The route's starting fuel weight, parsed out of the vehicle's WeightTotalizer
+  // XML (<TotalMassFuel><value>…</value>). Returns "" if not found.
+  async getStartingFuelWeight(): Promise<string> {
+    const xml = await this.getVehicleAttribute(VehicleAttribute.WeightTotalizer);
+    return xmlValue(xml, "<TotalMassFuel>");
+  }
+
+
   getPointCoordinate(pointId: string): Promise<string> {
     return this.getPointAttribute(pointId, PointAttribute.Coordinate.id);
   }
@@ -775,6 +797,19 @@ export class MissionClient {
     };
   }
 
+  // The vehicle lives under the segment, addressed by the segment id (matching
+  // the reference client's getVehicleAttribute path).
+  private vehicleAsParentId(): ParentIdInit {
+    return {
+      ids: [
+        { type: ModelType.Mission, id: this.currentMissionId },
+        { type: ModelType.Route, id: this.currentRouteId },
+        { type: ModelType.Segment, id: this.currentSegmentId },
+        { type: ModelType.Vehicle, id: this.currentSegmentId },
+      ],
+    };
+  }
+
   private pointId(pointId: string): ParentIdInit {
     return {
       ids: [
@@ -833,6 +868,19 @@ export class MissionClient {
 // Pulls the value for `attributeId` out of an AttributeInfoList response.
 const readAttribute = (list: AttributeInfoList, attributeId: string): string =>
   list.attributes.find((a) => a.name === attributeId)?.value ?? "";
+
+// Extracts `<element>…<value>X</value>` from a WeightTotalizer-style XML blob,
+// mirroring the reference client's getXmlValue. Returns "" if not found.
+const xmlValue = (xml: string, element: string): string => {
+  if (!xml) return "";
+  const elementIdx = xml.indexOf(element);
+  if (elementIdx < 0) return "";
+  const valueStart = xml.indexOf("<value>", elementIdx);
+  if (valueStart < 0) return "";
+  const start = valueStart + "<value>".length;
+  const end = xml.indexOf("</value>", start);
+  return end > 0 ? xml.substring(start, end) : "";
+};
 
 // A promise that resolves after `ms`, or rejects if `signal` aborts first.
 const delay = (ms: number, signal?: AbortSignal): Promise<void> =>
